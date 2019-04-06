@@ -79,8 +79,8 @@ function rbDynQuat(xdot::Vector{Float64}, RB::RigidBody,
     PositionList::Matrix{Float64}, ForceList::Matrix{Float64},
     TorqueList::Matrix{Float64},GravityInInertial::Vector{Float64})
 
-    # States are: 13 states
-    # x = [x,y,z]:inertial, [u,v,w]:body, [β0,β1,β2,β3], [ω1,ω2,ω3]:body
+    # States are: 14 states
+    # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]
     # Forces in ForceList are decribed in body reference, ForceList is nFx3.
     # PositionList are positions where forces are acting relative to cm,
     # decribed in body reference, PositionList is nFx3.
@@ -91,32 +91,60 @@ function rbDynQuat(xdot::Vector{Float64}, RB::RigidBody,
     ypos = RB.x[2];  # y position in inertial frame
     h    = RB.x[3];  # z position in inertial frame
 
-    u = RB.x[4:6];   # Velocities in body reference frame
+    u = RB.x[4:6];   # Velocities in Inertial reference frame
     β = RB.x[7:10];  # Euler parameters
-    ω = RB.x[11:13]; # Angular velocity  in body reference frame
-
+    βdot = RB.x[11:14] # Euler parameter derivatives
+    ω = angVel(β,βdot)
     β0 = β[1];
     β1 = β[2];
     β2 = β[3];
     β3 = β[4];
+
 
     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
     quat2dcm(RB.dcm,β);
 
     GravityInBody = RB.dcm*GravityInInertial; # Convert to body reference
 
-    xdot[1:3] = RB.dcm'*u; # Velocities in inertial frame.
-    xdot[4:6] = sum(ForceList,dims=1)/RB.m + GravityInBody; # Euler's first law.
-
+    # xdot[1:3] = RB.dcm'*u; # Velocities in inertial frame.
+    # xdot[4:6] = sum(ForceList,dims=1)/RB.m + GravityInBody; # Euler's first law.
     # betadot equations
-    Ω = [0    -ω[1] -ω[2]  -ω[3];
-         ω[1]  0     ω[2]   ω[3];
-         ω[2] -ω[3]  0      ω[1];
-         ω[3]  ω[2] -ω[1]    0;
-        ];
-    xdot[7:10] = Ω*β; # Not accurate -- need Udwadia's formulation.
-
+    # Ω = [0    -ω[1] -ω[2]  -ω[3];
+    #      ω[1]  0     ω[2]   ω[3];
+    #      ω[2] -ω[3]  0      ω[1];
+    #      ω[3]  ω[2] -ω[1]    0;
+    #     ];
+    # xdot[7:10] = Ω*β; # Not accurate -- need Udwadia's formulation.
     # ω dot equation -- Euler's second law
     TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(Fi)[1]) + sum(TorqueList,dims=1);
-    xdot[11:13] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
+    # xdot[11:13] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
+
+    # Udwadia's formulation using 14 States
+    E1 = [-β1  β0  β3 -β2
+          -β2 -β3  β0  β1
+          -β3  β2 -β1  β0]
+    xdot[1:3] = u
+    xdot[4:6] = transpose(RB.dcm)*sum(ForceList,dims=1)/RB.m + GravityInInertial
+    xdot[7:10] = βdot
+    xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(ω)*RB.I*ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
+
+
+end
+
+function skewX(X::Matrix{Float64},x::Vector{Float64})
+    X = [    0 -x[3]  x[2]
+          x[3]     0 -x[1]
+         -x[2]  x[1]    0]
+end
+
+function angVel(ω::Vector{Float64},β::Vector{Float64},βdot::Vector{Float64})
+    β0 = β[1];
+    β1 = β[2];
+    β2 = β[3];
+    β3 = β[4];
+
+    E1 = [-β1  β0  β3 -β2
+          -β2 -β3  β0  β1
+          -β3  β2 -β1  β0]
+    ω = E1*βdot
 end
