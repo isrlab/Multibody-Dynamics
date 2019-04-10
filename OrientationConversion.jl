@@ -89,7 +89,8 @@ function dcm2quat(C::Matrix{Float64})::Vector{Float64}
     return(q);
 end
 
-function quat2dcm(C::Matrix{Float64},q::Vector{Float64})
+function quat2dcm(C,q)
+    # Had to remove function argument type declarations for ForwardDiff
     β0 = q[1];
     β1 = q[2];
     β2 = q[3];
@@ -100,7 +101,7 @@ function quat2dcm(C::Matrix{Float64},q::Vector{Float64})
     2*(β1*β3+β0*β2)       2*(β2*β3-β0*β1)         (β0^2-β1^2-β2^2+β3^2)];
 end
 
-function quat2dcm(q::Vector{Float64})::Matrix{Float64}
+function quat2dcm(q)
     C = Matrix{Float64}(undef,3,3);
     quat2dcm(C,q);
     return(C);
@@ -133,4 +134,30 @@ function ang2dcm(dcm::Matrix{Float64},ang::Vector{Float64},orientation::String)
     else
         error("Uknown orientation specified")
     end
+end
+
+function skewX(x::Vector{Float64})
+    X = [    0 -x[3]  x[2]
+          x[3]     0 -x[1]
+         -x[2]  x[1]    0]
+    return X
+end
+
+function angVel(ω::Vector{Float64},β::Vector{Float64},βdot::Vector{Float64})
+    β0 = β[1];
+    β1 = β[2];
+    β2 = β[3];
+    β3 = β[4];
+
+    E1 = [-β1  β0  β3 -β2
+          -β2 -β3  β0  β1
+          -β3  β2 -β1  β0]
+    ω = 2*E1*βdot
+end
+
+function genE(β::Vector{Float64})
+    X = [                        transpose(β)
+         -β[2:4] β[1]*Matrix{Float64}(I,3,3) - skewX(β[2:4])]
+    return X         
+
 end
