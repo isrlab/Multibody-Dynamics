@@ -89,8 +89,7 @@ function dcm2quat(C::Matrix{Float64})::Vector{Float64}
     return(q);
 end
 
-function quat2dcm(C,q)
-    # Had to remove function argument type declarations for ForwardDiff
+function quat2dcm(C::Matrix{T},q::Vector{T}) where T <: Real
     β0 = q[1];
     β1 = q[2];
     β2 = q[3];
@@ -101,9 +100,19 @@ function quat2dcm(C,q)
     2*(β1*β3+β0*β2)       2*(β2*β3-β0*β1)         (β0^2-β1^2-β2^2+β3^2)];
 end
 
-function quat2dcm(q)
-    C = Matrix{Float64}(undef,3,3);
-    quat2dcm(C,q);
+function quat2dcm(q::Vector{T}) where T <: Real
+# ForwardDiff has problems with inplace function definitions
+    β0 = q[1];
+    β1 = q[2];
+    β2 = q[3];
+    β3 = q[4];
+
+    C =  [(β0^2+β1^2-β2^2-β3^2) 2*(β1*β2+β0*β3)           2*(β1*β3-β0*β2);
+    2*(β1*β2-β0*β3)         (β0^2-β1^2+β2^2-β3^2)   2*(β2*β3+β0*β1);
+    2*(β1*β3+β0*β2)       2*(β2*β3-β0*β1)         (β0^2-β1^2-β2^2+β3^2)];
+
+    # C = Matrix{Float64}(undef,3,3);
+    # quat2dcm(C,q);
     return(C);
 end
 
@@ -158,6 +167,6 @@ end
 function genE(β::Vector{Float64})
     X = [                        transpose(β)
          -β[2:4] β[1]*Matrix{Float64}(I,3,3) - skewX(β[2:4])]
-    return X         
+    return X
 
 end
