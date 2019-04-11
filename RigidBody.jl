@@ -143,3 +143,9 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     xdot[4:7] = βdot
     xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.I*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
 end
+
+function initialiseRigidBody(RB::RigidBody,x0::Vector{Float64})
+    # Initialise rigid body with x0
+    RB.x = x0
+    return RB
+end
