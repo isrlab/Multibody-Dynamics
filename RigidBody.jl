@@ -15,7 +15,7 @@ end
 
 mutable struct RigidBody
     m::Float64; # Mass of the rigid body.
-    I::Matrix{Float64}; # Moment of inertia 3x3 matrix
+    In::Matrix{Float64}; # Moment of inertia 3x3 matrix
     orientation::String; # "321", "quaternions". Only these two supported now.
     # This will determine how many states there are
     # 12 for euler angle, 13 for quartenions.
@@ -36,7 +36,12 @@ mutable struct RigidBody
         end
 
         dcm = Matrix{Float64}(undef,3,3);
-        invI = inv(Inertia);
+
+        if det(Inertia)!=0
+            invI = inv(Inertia);
+        else invI = Matrix{Float64}{I,3,3}
+        end
+
         J = [rand(1) zeros(1,3)
              zeros(3,1) Inertia]
         xdot = function times2(in::Float64)::Float64
@@ -44,7 +49,7 @@ mutable struct RigidBody
         end
         this = new();
         this.m = mass;
-        this.I = Inertia;
+        this.In = Inertia;
         this.orientation = lowercase(orientation);
         this.dcm = dcm
         this.x = x0;
@@ -141,11 +146,21 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     xdot[1:3] = u
     xdot[8:10] = transpose(RB.dcm)*sum(ForceList,dims=1)/RB.m + GravityInInertial
     xdot[4:7] = βdot
-    xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.I*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
+    xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.In*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
 end
+
 
 function initialiseRigidBody(RB::RigidBody,x0::Vector{Float64})
     # Initialise rigid body with x0
     RB.x = x0
     return RB
+end
+
+function InertialFrameAsRB()
+    m = 0.0
+    I = zeros(3,3)
+    orientation = "quaternions"
+
+    b = RigidBody(m,I,orientation)
+
 end
