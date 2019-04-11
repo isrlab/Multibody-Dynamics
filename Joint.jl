@@ -34,7 +34,7 @@ mutable struct RevJoint
     pos1::Vector{Float64} # Coordinates of joint in body-fixed frame of body 1
 
     RB2::RigidBody
-    pos2::Vector{Float64} # Coosrdinates of joint in body-fixed frame of body 2
+    pos2::Vector{Float64} # Coordinates of joint in body-fixed frame of body 2
 
     axis::Vector{Float64} # Unit vector corresponding to Euler Axis of rotation
 
