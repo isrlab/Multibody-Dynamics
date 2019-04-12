@@ -37,9 +37,10 @@ mutable struct RigidBody
 
         dcm = Matrix{Float64}(undef,3,3);
 
-        if det(Inertia)!=0
-            invI = inv(Inertia);
-        else invI = Matrix{Float64}{I,3,3}
+        if det(Inertia) != 0
+            invI = inv(Inertia)
+        else
+            invI = Matrix{Float64}(I,3,3)
         end
 
         J = [rand(1) zeros(1,3)
@@ -53,7 +54,7 @@ mutable struct RigidBody
         this.orientation = lowercase(orientation);
         this.dcm = dcm
         this.x = x0;
-        this.invI = inv(Inertia);
+        this.invI = invI;
         this.J = J
         this.ω = Vector{Float64}(undef,3)
         return this;
@@ -110,7 +111,7 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     u = RB.x[8:10];   # Velocities in Inertial reference frame
     β = RB.x[4:7];  # Euler parameters
     βdot = RB.x[11:14] # Euler parameter derivatives
-    angVel(RB.ω,β,βdot)
+    RB.ω = angVel(β,βdot)
     β0 = β[1];
     β1 = β[2];
     β2 = β[3];
@@ -162,5 +163,8 @@ function InertialFrameAsRB()
     orientation = "quaternions"
 
     b = RigidBody(m,I,orientation)
-
+    b.x = [zeros(3);1;zeros(3);zeros(3);zeros(4)]
+    b.dcm = quat2dcm(b.x[4:7])
+    b.ω = angVel(b.x[4:7],b.x[11:14])
+    return b
 end
