@@ -152,7 +152,7 @@ function skewX(x::Vector{Float64})
     return X
 end
 
-function angVel(ω::Vector{Float64},β::Vector{Float64},βdot::Vector{Float64})
+function angVel(β::Vector{Float64},βdot::Vector{Float64})
     β0 = β[1];
     β1 = β[2];
     β2 = β[3];
@@ -162,6 +162,7 @@ function angVel(ω::Vector{Float64},β::Vector{Float64},βdot::Vector{Float64})
           -β2 -β3  β0  β1
           -β3  β2 -β1  β0]
     ω = 2*E1*βdot
+    return ω
 end
 
 function genE(β::Vector{Float64})
