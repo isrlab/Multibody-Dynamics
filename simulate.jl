@@ -12,33 +12,43 @@ using LinearAlgebra
 using Revise
 using DifferentialEquations
 
-function simulate(tEnd,tSpan,j::RevJoint...)
+function simulate(tEnd,tSpan,j::Joint...)
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
 
-    p = j[1]
-    # Initial condition
-    X0 = [j[1].RB1.x;j[1].RB2.x]
+    # Initial condition (all bodies connected)
+    X0 = j[1].RB1.x
+    for each k= 1:length(j)
+        push!(X0,j[k].RB2.x)
+    end
     @show X0
     # Declaring the ODE Problem as per DifferentialEquations convention
-    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),p)
+    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
     sol = solve(prob,saveat=tSpan,Tsit5())
 end
 
-function mainDynODE!(dX,X,p,t)
+function mainDynODE!(dX,X,j::Tuple{Joint},t)
     # ODE function to be used as per DifferentialEquations covnention
-    # Create two extForces variables for each rigid body
-    extF1 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
-    extF2 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
-    j = p # Joint
-    mainDyn!(dX,X,j,extF1,extF2)
+    # Create extForcesList storing extForces for each rigid body
+    extFList = Vector{extForces}(undef,length(j)+1)
+    ForceConstr = Array{Float64}(undef,7,length(j)+1)
+    for k=1:length(j)+1
+        push!(extFList,genExtF(j[k].RB2))
+
+    end
+
+    mainDyn!(dX,X,j,extFList)
+
+    # extF1 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
+    # extF2 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
+
 end
 
-function mainDyn!(dQ,Q,j,extF1, extF2)
+function mainDyn!(dQ,Q,j::Tuple{Joint},extFList::Vector{extForces})
     j.RB1.x = Q[1:14]
     j.RB2.x = Q[15:28]
     GravityInInertial = [0.0;0.0;-9.806]
     # Force generated from Constraint (from UK formulation)
-    Fc = ForceConRev(j,extF1,extF2,GravityInInertial)
+    Fc = ForceCon(j,extF1,extF2,GravityInInertial)
     Fc1 = Fc[1:7]
     Fc2 = Fc[8:end]
     x1dot = dQ[1:14]
