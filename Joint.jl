@@ -18,7 +18,7 @@ mutable struct Joint
     axis::Vector{Float64}
 
     function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64}, rj2::Vector{Float64}, type::String, axis::Vector{Float64})
-        if type != "Revolute" || type != "Spherical" || type != "Weld"
+        if type != "Revolute" && type != "Spherical" && type != "Weld"
             error("Unknown joint specified.")
         end
 
