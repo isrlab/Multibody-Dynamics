@@ -31,7 +31,7 @@ mutable struct Joint
         if type == "Revolute"
             this.axis = axis
         else
-            this.axis = Vector{Float64}(undef,3,1)
+            this.axis = Vector{Float64}(undef,3)
         end
         return this
     end
