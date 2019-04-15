@@ -21,11 +21,16 @@ using Revise
 
 # Testing Dynamics with Revolute Joint
 R1 = RigidBody(m,I1,"quaternions")
-R2 = RigidBody(m,I1,"quaternions")
-axis = [0.0 0 1][:]
-rj1 = [1 0 0.0][:]
-rj2 = [1 0 0.0][:]
-j = RevJoint(R1,R2,rj1,rj2,axis)
+RbI = InertialFrameAsRB()
+x0R1 = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
+R1 = initialiseRigidBody(R1,x0R1)
+axis = [0.0 1.0 0.0][:]
+rj1 = [0.0 0.0 0.0][:]
+rj2 = [0.0 0.0 0.0][:]
+# x0R2 = rand(14)
+# R2 = RigidBody(m,I1,"quaternions")
+# R2 = initialiseRigidBody(R1,x0R2)
+j = Joint(RbI,R1,rj1,rj2,"Revolute",axis)
 tEnd = 1.0
 tSpan = 0.01
 simulate(tEnd,tSpan,j)
