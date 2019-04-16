@@ -292,14 +292,14 @@ function TranslationConstraint(j::Joint)#(x::Vector{Float64},pos::Vector{Float64
     β2dot = b2.x[11:14]
 
     A = zeros(3,14)
-    A[:,1:3] = -Matrix{Float64}(I,3,3)
-    A[:,8:10] = Matrix{Float64}(I,3,3)
+    A[:,1:3] = Matrix{Float64}(I,3,3)
+    A[:,8:10] = -Matrix{Float64}(I,3,3)
     A[:,4:7] = TranslationConstraintSupplement(b1.x,rj1)[1]
     A[:,11:14] = -TranslationConstraintSupplement(b2.x,rj2)[1]
 
     b = zeros(3)
 
-    b[1:3] = TranslationConstraintSupplement(b1.x,rj1)[2] - TranslationConstraintSupplement(b2.x,rj2)[2]
+    b[1:3] = -TranslationConstraintSupplement(b1.x,rj1)[2] + TranslationConstraintSupplement(b2.x,rj2)[2]
 
     return (A,b)
     # rddotRHS = ForwardDiff.jacobian(rdot,β)*βdot
@@ -314,7 +314,7 @@ function TranslationConstraintSupplement(x::Vector{T},pos::Vector{T}) where T <:
     rJac = z->ForwardDiff.jacobian(r,z)
     rdot(y) = ForwardDiff.jacobian(r,y)*βdot
     rddotRHS = ForwardDiff.jacobian(rdot,β)*βdot
-    rddotLHS = -rJac(β)
+    rddotLHS = rJac(β)
     return (rddotLHS,rddotRHS)
 end
 
@@ -478,7 +478,7 @@ function genExtF(b::RigidBody,extF::extForces,GravityInInertial::Vector{Float64}
     # Function to generate augmented external Force vector for unconstrained system
     β = b.x[4:7]
     βdot = b.x[11:14]
-    quat2dcm(b.dcm,β)
+    b.dcm = quat2dcm(β)
     b.ω = angVel(β,βdot)
     E = genE(β)
     Edot = -genE(βdot)
@@ -491,6 +491,10 @@ function genExtF(b::RigidBody,extF::extForces,GravityInInertial::Vector{Float64}
     # TotalMoment = transpose(b.dcm)*TotalMoment
     Γb = [0.0;TotalMoment] # In the body frame
     Γu = 2*E*Γb
+    # @show β
+    # @show transpose(b.dcm)
+    # @show (sum(extF.Forces,dims=1)[:])
+
     F = [transpose(b.dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
          Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
     return F
