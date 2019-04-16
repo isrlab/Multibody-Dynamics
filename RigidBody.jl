@@ -152,10 +152,9 @@ function rbDynQuat(RB::RigidBody,
     # TotalMoment4 = [0;TotalMoment4]
     # TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(ForceList)[1]) + sum(TorqueList,dims=1)[:] + Fc[4:end]
     # xdot[11:13] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
-
+    # @show extF.Forces
     unconstrainedF = genExtF(RB,extF,GravityInInertial)
-    # @show unconstrainedF
-    # @show Fc
+    # @show unconstrainedF[1:3]
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
     # @show TotalForce
