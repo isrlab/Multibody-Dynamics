@@ -1,8 +1,8 @@
 # To implement joints between two rigid bodies.
 # Location of joint specified initially.
 
-include("RigidBody.jl")
-include("OrientationConversion.jl")
+# include("RigidBody.jl")
+# include("OrientationConversion.jl")
 
 using LinearAlgebra
 
