@@ -117,12 +117,12 @@ function ForceConSphIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
     β2dot = b2.x[11:14]
 
     # Spherical Joint has 5 constraints
-    A = zeros(5,14); b = zeros(5)
+    A = zeros(4,14); b = zeros(4)
     A[1:3,:] = TranslationConstraint(j)[1]; b[1:3] = TranslationConstraint(j)[2]
-    A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
+    A[4,:] = QuatNormConstraint(j)[1][2,:]; b[4] = QuatNormConstraint(j)[2][2]
     A_in = A[:,8:14]
 
-    M2 = genMatM(b2)
+    M = genMatM(b2)
 
     F = genExtF(b2,extF2,GravityInInertial)
 
@@ -242,7 +242,7 @@ function TranslationConstraint(j::Joint)#(x::Vector{Float64},pos::Vector{Float64
     b1 = j.RB1
     b2 = j.RB2
     rj1 = j.pos1
-    rj2 = -j.pos2
+    rj2 = j.pos2
     β1 = b1.x[4:7]
     β2 = b2.x[4:7]
     β1dot = b1.x[11:14]
@@ -252,11 +252,11 @@ function TranslationConstraint(j::Joint)#(x::Vector{Float64},pos::Vector{Float64
     A[:,1:3] = -Matrix{Float64}(I,3,3)
     A[:,8:10] = Matrix{Float64}(I,3,3)
     A[:,4:7] = TranslationConstraintSupplement(b1.x,rj1)[1]
-    A[:,11:14] = TranslationConstraintSupplement(b2.x,rj2)[1]
+    A[:,11:14] = -TranslationConstraintSupplement(b2.x,rj2)[1]
 
     b = zeros(3)
 
-    b[1:3] = TranslationConstraintSupplement(b1.x,rj1)[2] + TranslationConstraintSupplement(b2.x,rj2)[2]
+    b[1:3] = TranslationConstraintSupplement(b1.x,rj1)[2] - TranslationConstraintSupplement(b2.x,rj2)[2]
 
     return (A,b)
     # rddotRHS = ForwardDiff.jacobian(rdot,β)*βdot
@@ -309,7 +309,7 @@ end
 #     return (A,b)
 # end
 
-function RevJointConstraint(j::Joint) where T <: Real
+function RevJointConstraint(j::Joint)
     function f(y::Vector{T}) where T <: Real
         # Computes the Hamilton product of β1^-1 and β2
         y1 = [y[1];-y[2:4]]
@@ -413,10 +413,11 @@ function WeldJointAllConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <
 
 end
 function ConstraintForceTorque(M,F,A,b)
-    @show A
-    @show b
-    @show b-A*inv(M)*F
+    # @show A
+    # @show b
+    # @show F
     Fc = sqrt(M)*pinv(A*M^(-1/2))*(b-A*inv(M)*F)
+    # @show Fc
     return Fc
     # Fc is in the inertial frame
 end
