@@ -12,7 +12,16 @@ using LinearAlgebra
 using Revise
 using DifferentialEquations
 
-function simulate(tEnd,tSpan,j::Joint...)
+struct solSim
+    # To store results of Simulation
+    t::Vector{Float64}
+    r::Matrix{Float64}
+    v::Matrix{Float64}
+    β::Matrix{Float64}
+    βdot::Matrix{Float64}
+end
+
+function simulate(tEnd::Float64,tSpan::Float64,j::Joint...)
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
 
     # Initial condition (all bodies connected)
@@ -20,13 +29,18 @@ function simulate(tEnd,tSpan,j::Joint...)
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)
     end
-    @show X0
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
     sol = solve(prob,saveat=tSpan,Tsit5())
+    return sol
+    # rSol = transpose(sol[1:3,:])
+    # vSol = transpose(sol[8:10,:])
+    # βSol = transpose(sol[4:7,:])
+    # βdotSol = transpose(sol[11:14,:])
+    # return solFinal = solSim(sol.t,rSol,vSol,βSol,βdotSol)
 end
 
-function mainDynODE!(dX,X,j::Tuple{Joint},t)
+function mainDynODE!(dX::Vector{Float64},X::Vector{Float64},j::Tuple{Joint},t::Float64)
     # ODE function to be used as per DifferentialEquations covnention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -47,9 +61,8 @@ function mainDynODE!(dX,X,j::Tuple{Joint},t)
     # extF2 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
 end
 
-function mainDyn!(dQ,Q,j::Tuple{Joint},extFList::Vector{extForces}, ForceConstr::Array{Float64,2})
+function mainDyn!(dQ::Vector{Float64},Q::Vector{Float64},j::Tuple{Joint},extFList::Vector{extForces}, ForceConstr::Array{Float64,2})
     GravityInInertial = [0.0;0.0;-9.806]
-    @show Q
     j[1].RB1.x = Q[1:14]
     for k=1:length(j)
         for m=1:14
