@@ -1,8 +1,8 @@
 # Function to generate constraint and/or external forces
 
-include("RigidBody.jl")
-include("OrientationConversion.jl")
-include("Joint.jl")
+# include("RigidBody.jl")
+# include("OrientationConversion.jl")
+# include("Joint.jl")
 
 using LinearAlgebra
 using ForwardDiff
@@ -47,10 +47,10 @@ function ForceConRevIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
     β2dot = b2.x[11:14]
 
     # Revolute Joint has 7 constraints
-    A = zeros(7,14); b = zeros(7);
+    A = zeros(6,14); b = zeros(6);
     A[1:3,:] = TranslationConstraint(j)[1]; b[1:3] = TranslationConstraint(j)[2]
-    A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
-    A[6:7,:] = RevJointConstraint(j)[1]; b[6:7] = RevJointConstraint(j)[2]
+    A[4,:] = QuatNormConstraint(j)[1][2,:]; b[4] = QuatNormConstraint(j)[2][2]
+    A[5:6,:] = RevJointConstraint(j)[1]; b[5:6] = RevJointConstraint(j)[2]
 
     A_in = A[:,8:14]
     # A = zeros(7,14)
@@ -413,12 +413,12 @@ function WeldJointAllConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <
 
 end
 function ConstraintForceTorque(M,F,A,b)
-    @show M
     @show A
     @show b
-    @show M^-0.5
-    @show A*M^-0.5
+    @show b-A*inv(M)*F
     Fc = sqrt(M)*pinv(A*M^(-1/2))*(b-A*inv(M)*F)
+    return Fc
+    # Fc is in the inertial frame
 end
 
 function genMatM(b::RigidBody)
@@ -434,16 +434,21 @@ function genExtF(b::RigidBody,extF::extForces,GravityInInertial::Vector{Float64}
     # Function to generate augmented external Force vector for unconstrained system
     β = b.x[4:7]
     βdot = b.x[11:14]
+    quat2dcm(b.dcm,β)
+    b.ω = angVel(β,βdot)
     E = genE(β)
     Edot = -genE(βdot)
     TotalMoment = zeros(3)
-    J0 = # random positive number
+    # J0 = rand(1)# random positive number
     for i in 1:size(extF.Forces)[1]
         TotalMoment = TotalMoment + cross(extF.Positions[i,:],extF.Forces[i,:])
     end
     TotalMoment = TotalMoment + sum(extF.Torques,dims=1)[:]
-    TotalMoment4 = [0.0;TotalMoment]
+    # TotalMoment = transpose(b.dcm)*TotalMoment
+    Γb = [0.0;TotalMoment] # In the body frame
+    Γu = 2*E*Γb
     F = [transpose(b.dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
-         TotalMoment4 - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
+         Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
     return F
+    # F returned is in the inertial frame
 end
