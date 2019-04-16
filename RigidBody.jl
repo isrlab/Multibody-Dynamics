@@ -4,7 +4,8 @@
 # Need to define springs, dampers, constraints.
 
 using LinearAlgebra
-include("OrientationConversion.jl");
+# include("OrientationConversion.jl");
+
 
 mutable struct extForces
     Forces::Matrix{Float64}
@@ -25,6 +26,7 @@ mutable struct RigidBody
     dcm::Matrix{Float64};  # Inertial to body.
     invI::Matrix{Float64}; # inverse of moment of inertia, compute once during initialization.
     J::Matrix{Float64} # 4x4 Inertia with first elemtn a random positive number
+    invJ::Matrix{Float64} # inverse of 4x4 inertia matrix
     ω::Vector{Float64} # Angular velocity in body frame
     function RigidBody(mass::Float64, Inertia::Matrix{Float64}, orientation::String)
         if orientation == "321"
@@ -45,6 +47,8 @@ mutable struct RigidBody
 
         J = [rand(1) zeros(1,3)
              zeros(3,1) Inertia]
+        invJ = [1/J[1,1] zeros(1,3)
+                zeros(3,1) invI]
         xdot = function times2(in::Float64)::Float64
             return(2*in);
         end
@@ -56,6 +60,7 @@ mutable struct RigidBody
         this.x = x0;
         this.invI = invI;
         this.J = J
+        this.invJ = invJ
         this.ω = Vector{Float64}(undef,3)
         return this;
     end
@@ -136,18 +141,33 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     #     ];
     # xdot[7:10] = Ω*β; # Not accurate -- need Udwadia's formulation.
     # ω dot equation -- Euler's second law
-    TotalForce = sum(ForceList,dims=1) + m*GravityInInertial + Fc[1:3]
-    TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(ForcesList)[1]) + sum(TorqueList,dims=1) + Fc[4:end]
+    # TotalForce = transpose(RB.dcm)*(sum(ForceList,dims=1)[:]) + m*GravityInInertial + Fc[1:3]
+    # TotalMoment = zeros(3); TotalMoment4 = zeros(4)
+    # for i=1:size(ForceList)[1]
+    #     TotalMoment = TotalMoment + cross(PositionList[i,:],ForceList[i,:])
+    # end
+    # TotalMoment = transpose(RB.dcm)*TotalMoment
+    # TotalMoment4 = [0;TotalMoment4]
+    # TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(ForceList)[1]) + sum(TorqueList,dims=1)[:] + Fc[4:end]
     # xdot[11:13] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
 
+    unconstrainedF = genExtF(RB,extF,GravityInInertial)
+    @show unconstrainedF
+    @show Fc
+    TotalForce = unconstrainedF[1:3] + Fc[1:3]
+    TotalMoment = unconstrainedF[4:7] + Fc[4:7]
+
+    # E1 = [-β1  β0  β3 -β2
+    #       -β2 -β3  β0  β1
+    #       -β3  β2 -β1  β0]
+
     # Udwadia's formulation using 14 States
-    E1 = [-β1  β0  β3 -β2
-          -β2 -β3  β0  β1
-          -β3  β2 -β1  β0]
+    E = genE(β)
     xdot[1:3] = u
-    xdot[8:10] = transpose(RB.dcm)*sum(ForceList,dims=1)/RB.m + GravityInInertial
+    xdot[8:10] = TotalForce/m
     xdot[4:7] = βdot
-    xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.In*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
+    xdot[11:14] = 1/4*transpose(E)*RB.invJ*E*TotalMoment
+    # xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.In*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
 end
 
 
