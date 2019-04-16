@@ -30,7 +30,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...)
         append!(X0,j[k].RB2.x)
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
-    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
+    prob = ODEProblem(mainDynODE,X0,(0.0,tEnd),j)
     sol = solve(prob,saveat=tSpan,Tsit5())
     return sol
     # rSol = transpose(sol[1:3,:])
@@ -40,7 +40,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...)
     # return solFinal = solSim(sol.t,rSol,vSol,βSol,βdotSol)
 end
 
-function mainDynODE!(dX::Vector{Float64},X::Vector{Float64},j::Tuple{Joint},t::Float64)
+function mainDynODE(X::Vector{Float64},j::Tuple{Joint},t::Float64)
     # ODE function to be used as per DifferentialEquations covnention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -56,12 +56,16 @@ function mainDynODE!(dX::Vector{Float64},X::Vector{Float64},j::Tuple{Joint},t::F
     for k=2:length(j)+1
         ForceConstr[:,k] = ForceCon(j[k-1],extFList[k-1],extFList[k],GravityInInertial)
     end
-    mainDyn!(dX,X,j,extFList,ForceConstr)
+
+    # dX = Vector{Float64}(undef,(length(j)+1)*14)
+    dX = mainDyn(X,j,extFList,ForceConstr)
+
     # extF1 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
     # extF2 = extForces(zeros(1,3),zeros(1,3),zeros(1,3))
 end
 
-function mainDyn!(dQ::Vector{Float64},Q::Vector{Float64},j::Tuple{Joint},extFList::Vector{extForces}, ForceConstr::Array{Float64,2})
+function mainDyn(Q::Vector{Float64},j::Tuple{Joint},extFList::Vector{extForces}, ForceConstr::Array{Float64,2})
+    dQ = Vector{Float64}(undef,(length(j)+1)*14)
     GravityInInertial = [0.0;0.0;-9.806]
     j[1].RB1.x = Q[1:14]
     for k=1:length(j)
@@ -71,11 +75,10 @@ function mainDyn!(dQ::Vector{Float64},Q::Vector{Float64},j::Tuple{Joint},extFLis
     end
     # First body always the inertial frame
     dQ[1:14] = zeros(14)
-    # rbDynQuat!(dQ[1:14],j[1].RB1,extFList[1],ForceConstr[:,1])
     for k=1:length(j)
-        rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
+        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
     end
-
+    return dQ
     # j.RB1.x = Q[1:14]
     # j.RB2.x = Q[15:28]
     # # Force generated from Constraint (from UK formulation)

@@ -98,7 +98,7 @@ end
 #     xdot[10:12] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
 # end
 
-function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
+function rbDynQuat(RB::RigidBody,
     extF::extForces, Fc::Vector{Float64}, GravityInInertial::Vector{Float64})
 
     # States are: 14 states
@@ -108,6 +108,8 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     # decribed in body reference, PositionList is nFx3.
     # Torques in TorqueList are in body reference. TorqueList is matrix nTx3
     # Inertia is a data structure: Inertia.I and Inertia.invI.
+
+    xdot = Vector{Float64}(undef,14)
 
     xpos = RB.x[1];  # x position in inertial frame
     ypos = RB.x[2];  # y position in inertial frame
@@ -152,10 +154,12 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     # xdot[11:13] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
 
     unconstrainedF = genExtF(RB,extF,GravityInInertial)
-    @show unconstrainedF
-    @show Fc
+    # @show unconstrainedF
+    # @show Fc
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
+    # @show TotalForce
+    # @show TotalMoment
 
     # E1 = [-β1  β0  β3 -β2
     #       -β2 -β3  β0  β1
@@ -167,6 +171,7 @@ function rbDynQuat!(xdot::Vector{Float64}, RB::RigidBody,
     xdot[8:10] = TotalForce/m
     xdot[4:7] = βdot
     xdot[11:14] = 1/4*transpose(E)*RB.invJ*E*TotalMoment
+    return xdot
     # xdot[11:14] = -0.5*transpose(E1)*RB.invI*skewX(RB.ω)*RB.In*RB.ω - (transpose(βdot)*βdot)*β + transpose(E1)*RB.invI*E1*TotalMoment/4
 end
 
