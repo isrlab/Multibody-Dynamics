@@ -130,7 +130,7 @@ function ForceConSphIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
 
     # Spherical Joint leaves 3 degrees of freedom (remove 4 constraints)
     A = zeros(4,7); b = zeros(4)
-    A[1:3,:] = TranslationConstraint(j)[1][8:14]; b[1:3] = TranslationConstraint(j)[2]
+    A[1:3,:] = TranslationConstraint(j)[1][:,8:14]; b[1:3] = TranslationConstraint(j)[2]
     A[4,:] = QuatNormConstraint(j)[1][2,8:14]; b[4] = QuatNormConstraint(j)[2][2]
 
     M = genMatM(b2)
