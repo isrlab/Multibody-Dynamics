@@ -31,7 +31,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...)
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE,X0,(0.0,tEnd),j)
-    sol = solve(prob,saveat=tSpan,Tsit5())
+    sol = solve(prob,saveat=tSpan,Tsit5(),reltol=1e-10,abstol=1e-10)
     return sol
     # rSol = transpose(sol[1:3,:])
     # vSol = transpose(sol[8:10,:])
@@ -79,7 +79,7 @@ function mainDyn(Q::Vector{Float64},j::Tuple{Joint},extFList::Vector{extForces},
     #     j[k].RB2.x[m] = Q[14*k + m]
     #     end
     # end
-    
+
     # First body always the inertial frame
     dQ[1:14] = zeros(14)
     for k=1:length(j)
