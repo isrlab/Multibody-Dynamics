@@ -1,47 +1,33 @@
 include("simulate.jl")
 include("plotSol.jl")
 include("OrientationConversion.jl")
-
-clearconsole()
-m = 1.0; l = 1.0;
-I1 = [1 0 0; 0 m*l^2/12 0; 0 0 1]
 using Revise
 using JLD
-# using Plots
-# pyplot();
-# Test the code.
-# for i in 1:100
-#     #ang0 = [45*pi/180;60*pi/180;30*pi/180];
-#     ang0 = rand(3);
-#     q = angle2quat(ang0,"321");
-#     ang = quat2angle(q,"321");
-#     e = ang - ang0;
-#     println("Norm error:", norm(e));
-# end
+clearconsole()
 
-# Simulate rigid body dynamics
-# We have to now call ode solver with parameters
-# -- this will have a function that will be called to compute all time varying
-# -- quantities.
-
+m = 1.0; l = 1.0; # Mass and length of bar
+# Assuming bar revolves about Y axis
+I1 = [1 0 0; 0 m*l^2/12 0; 0 0 1]
 
 # Testing Dynamics with Revolute Joint
 R1 = RigidBody(m,I1,"quaternions")
 RbI = InertialFrameAsRB()
-x0R1 = [0.5;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+x0R1 = [l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
 R1 = initialiseRigidBody(R1,x0R1)
-axis = [0.0 1.0 0.0][:]
-rj1 = [0.0 0.0 0.0][:]
-rj2 = [-0.5 0.0 0.0][:]
-# x0R2 = rand(14)
-# R2 = RigidBody(m,I1,"quaternions")
-# R2 = initialiseRigidBody(R1,x0R2)
+
+axis = [0.0 1.0 0.0][:] # Axis about which bar is revolving
+
+rj1 = [0.0 0.0 0.0][:] # Joint Location in body frame of first body
+rj2 = [-0.5 0.0 0.0][:] # Joint location in body frame of second body
+
 j = Joint(RbI,R1,rj1,rj2,"Revolute",axis)
+
+# Simulation
 tEnd = 1.0
 tSpan = 0.01
 sol = simulate(tEnd,tSpan,j)
 
-tSim = LinRange(0.0,tEnd,Int64(tEnd/tSpan)+1)
+tSim = sol.t
 rSol = transpose(sol[15:17,:])
 vSol = transpose(sol[22:24,:])
 βSol = transpose(sol[18:21,:])
@@ -64,6 +50,8 @@ solMin = load("PendulumMin.jld")
 ωMin = solMin["ωMin"]
 rMin = solMin["rMin"]
 vMin = solMin["vMin"]
+
+# Plotting errors
 plotPos(tSim,rMin-rSol)
 plotVel(tSim,vMin-vSol)
 plotAngVel(tSim,ωMin+ωSol)
