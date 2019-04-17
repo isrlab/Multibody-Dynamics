@@ -129,7 +129,7 @@ function rbDynQuat(RB::RigidBody,
     TorqueList = extF.Torques
 
     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
-    quat2dcm(RB.dcm,β);
+    RB.dcm = quat2dcm(β);
 
     GravityInBody = RB.dcm*GravityInInertial; # Convert to body reference
 
