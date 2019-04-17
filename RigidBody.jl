@@ -181,6 +181,13 @@ function initialiseRigidBody(RB::RigidBody,x0::Vector{Float64})
     return RB
 end
 
+function updateRigidBody(b::RigidBody,x::Vector{Float64})
+    b.x = x
+    b.dcm = quat2dcm(x[4:7])
+    b.ω = angVel(x[4:7],x[11:14])
+    return b
+end
+
 function InertialFrameAsRB()
     m = 0.0
     I = zeros(3,3)
