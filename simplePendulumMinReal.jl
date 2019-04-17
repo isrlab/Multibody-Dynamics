@@ -30,13 +30,15 @@ thDotSol = sol[2,:]
 xSol = zeros(length(tSim))
 zSol = zeros(length(tSim))
 ySol = zeros(length(tSim))
+vSol = zeros(length(tSim),3)
 for i=1:length(tSim)
     xSol[i] = l/2*sin(thSol[i])
     zSol[i] = -l/2*cos(thSol[i])
+    vSol[i,:] = [l/2*cos(thSol[i])*thDotSol[i] 0.0 l/2*sin(thSol[i])*thDotSol[i]]
 end
 rSol = [xSol ySol zSol]
 ωSol = [ySol thDotSol ySol]
-save("PendulumMin.jld","rMin",rSol,"ωMin", ωSol)
+save("PendulumMin.jld","rMin",rSol,"ωMin", ωSol,"vMin",vSol)
 
 # rSol = transpose(sol[1:3,:])
 # vSol = transpose(sol[4:6,:])
