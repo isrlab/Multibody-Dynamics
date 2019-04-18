@@ -157,7 +157,6 @@ function rbDynQuat(RB::RigidBody,
     # @show unconstrainedF[1:3]
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
-    # @show TotalForce
     # @show TotalMoment
 
     # E1 = [-β1  β0  β3 -β2

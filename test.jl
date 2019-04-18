@@ -64,6 +64,6 @@ solMin = load("PendulumMin.jld")
 ωMin = solMin["ωMin"]
 rMin = solMin["rMin"]
 vMin = solMin["vMin"]
-plotPos(tSim,rMin-rSol)
-plotVel(tSim,vMin-vSol)
-plotAngVel(tSim,ωMin+ωSol)
+plotPos(tSim,rSol-rMin)
+plotVel(tSim,vSol-vMin)
+plotAngVel(tSim,ωSol+ωMin)
