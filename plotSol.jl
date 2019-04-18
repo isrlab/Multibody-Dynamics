@@ -1,3 +1,5 @@
+using Plots;pyplot()
+
 function plotPos(tSim,rSol)
     p1r = plot(tSim,rSol[:,1], title="x", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
     p2r = plot(tSim,rSol[:,2], title="y", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)

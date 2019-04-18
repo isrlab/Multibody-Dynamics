@@ -1,9 +1,8 @@
+include("plotSol.jl")
 using LinearAlgebra
 using DifferentialEquations
 using Revise
 using JLD
-using Plots; pyplot()
-include("plotSol.jl")
 clearconsole()
 # cd("/home/vish0908/Documents/ModRob/ISRL-MBD")
 
