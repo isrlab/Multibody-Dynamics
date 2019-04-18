@@ -40,7 +40,7 @@ for i=1:length(tSim)
 end
 rSol = [xSol ySol zSol]
 ωSol = [ySol thDotSol ySol]
-plotPos(tSim,rSol)
+plotAngVel(tSim,ωSol)
 # save("PendulumMin.jld","rMin",rSol,"ωMin", ωSol,"vMin",vSol)
 
 # rSol = transpose(sol[1:3,:])

@@ -1,8 +1,9 @@
+using Revise
+using JLD
+using Plots;pyplot()
 include("simulate.jl")
 include("plotSol.jl")
 include("OrientationConversion.jl")
-using Revise
-using JLD
 clearconsole()
 
 m = 1.0; l = 1.0; # Mass and length of bar
