@@ -63,15 +63,9 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Joint},t::Float64)
 
     # Generate constraint Forces for each body using UK Formulation
     ForceConstr = Array{Float64}(undef,7,length(j)+1)
-    if j[1].RB1.m == 0
-        for k=2:length(j)+1
-            ForceConstr[:,k] = ForceCon(j[k-1],extFList[k-1],extFList[k],GravityInInertial)
-        end
-    else
-        for k=1:length(j)
-            ForceConstr[:,k] = ForceCon(j[k],extFList[k],extFList[k+1],GravityInInertial)[1:7]
-            ForceConstr[:,k+1] = ForceCon(j[k],extFList[k],extFList[k+1],GravityInInertial)[8:14]
-        end
+    # First body is the inertial frame, so forces on it are not relevant.
+    for k=2:length(j)+1
+        ForceConstr[:,k] = ForceCon(j[k-1],extFList[k-1],extFList[k],GravityInInertial)
     end
 
     dX = mainDyn(X,j,extFList,ForceConstr, GravityInInertial)
