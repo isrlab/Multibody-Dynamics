@@ -1,3 +1,5 @@
+ENV["PYTHON"]=""
+using Pkg; Pkg.build("PyCall")
 using Plots
 pyplot();
 
