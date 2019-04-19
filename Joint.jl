@@ -11,14 +11,23 @@ mutable struct Joint
     pos1::Vector{Float64} # Coordinates of joint in body-fixed frame of body 1
 
     RB2::RigidBody
-    pos2::Vector{Float64} # Coosrdinates of joint in body-fixed frame of body 2
+    pos2::Vector{Float64} # Coordinates of joint in body-fixed frame of body 2
 
-    type::String # "Revolute", "Spherical", "Weld"
+    type::String # "Revolute", "Spherical", "Weld", "Free", "Spring"
 
-    axis::Vector{Float64}
+    # Revolute Joint
+    axis::Vector{Float64} # Axis for revolute joint
 
-    function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64}, rj2::Vector{Float64}, type::String, axis::Vector{Float64})
-        if type != "Revolute" && type != "Spherical" && type != "Weld" && type != "Free"
+    # Spring
+    k::Float64
+    restLen::Float64
+
+    function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64},
+        rj2::Vector{Float64}; type::String="Free",
+        axis::Vector{Float64}=zeros(3), k::Float64=0.0, rL::Float64=0.0)
+        # Default values for type, axis, k, and restLen provided.
+        allowedTypes = ["Revolute", "Spherical", "Weld", "Free", "Spring"]
+        if !in(type,allowedTypes)
             error("Unknown joint specified.")
         end
 
@@ -28,31 +37,9 @@ mutable struct Joint
         this.pos1 = rj1
         this.pos2 = rj2
         this.type = type
-        if type == "Revolute"
-            this.axis = axis
-        else
-            this.axis = Vector{Float64}(undef,3)
-        end
+        this.axis = axis
+        this.k = k
+        this.restLen = rL
         return this
     end
 end
-
-# mutable struct RevJoint
-#     RB1::RigidBody
-#     pos1::Vector{Float64} # Coordinates of joint in body-fixed frame of body 1
-#
-#     RB2::RigidBody
-#     pos2::Vector{Float64} # Coordinates of joint in body-fixed frame of body 2
-#
-#     axis::Vector{Float64} # Unit vector corresponding to Euler Axis of rotation
-#
-#     function RevJoint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64}, rj2::Vector{Float64}, axis::Vector{Float64})
-#         this = new()
-#         this.RB1 = body1
-#         this.RB2 = body2
-#         this.pos1 = rj1
-#         this.pos2 = rj2
-#         this.axis = axis
-#         return this
-#     end
-# end
