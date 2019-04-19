@@ -25,7 +25,8 @@ j = Joint(RbI,R1,rj1,rj2,"Revolute",axis)
 # Simulation
 tEnd = 1.0
 tSpan = 0.01
-sol = simulate(tEnd,tSpan,j)
+g = [0.0;0.0;-9.806]
+sol = simulate(tEnd,tSpan,j,g=g)
 
 tSim = sol.t
 rSol = transpose(sol[15:17,:])

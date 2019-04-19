@@ -12,7 +12,7 @@ using LinearAlgebra
 using Revise
 using DifferentialEquations
 
-global GravityInInertial = [0.0;0.0;-9.806]
+global GravityInInertial = Vector{Float64}(undef,3)
 
 struct solSim
     # To store results of Simulation
@@ -23,10 +23,11 @@ struct solSim
     βdot::Matrix{Float64}
 end
 
-function simulate(tEnd::Float64,tSpan::Float64,j::Joint...)
+function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806])
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
 
     # Initial condition (all bodies connected)
+    global GravityInInertial = g
     X0 = j[1].RB1.x
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)

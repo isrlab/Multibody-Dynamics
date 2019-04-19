@@ -24,7 +24,8 @@ j = Joint(RbI,R1,rj1,rj2,type="Spring",k=k, rL = l)
 # Simulation
 tEnd = 10.0
 tSpan = 0.01
-sol = simulate(tEnd,tSpan,j)
+g = [0.0;0.0;0.0]
+sol = simulate(tEnd,tSpan,j,g = g)
 
 tSim = sol.t
 rSol = transpose(sol[15:17,:])
