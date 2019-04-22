@@ -138,7 +138,7 @@ function rbDynQuat(RB::RigidBody,
     # Udwadia's formulation using 14 States
     E = genE(β)
     xdot[1:3] = u
-    xdot[8:10] = TotalForce/m
+    xdot[8:10] = TotalForce/RB.m
     xdot[4:7] = βdot
     xdot[11:14] = 1/4*transpose(E)*RB.invJ*E*TotalMoment
     return xdot
