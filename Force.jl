@@ -20,7 +20,7 @@ function ForceCon(j::Joint,extF1,extF2,GravityInInertial)
         elseif j.type == "Free"
             Fc = ForceFree(j,extF2,GravityInInertial)
         elseif j.type == "Spring"
-            Fc = ForceConSprIn(j)
+            Fc = ForceConSprIn(j,extF2,GravityInInertial)
         else
             error("Joint type not prescribed.")
         end
@@ -32,7 +32,7 @@ function ForceCon(j::Joint,extF1,extF2,GravityInInertial)
         elseif j.type == "Weld"
             Fc = ForceConWeldAll(j,extF1,extF2,GravityInInertial)
         elseif j.type == "Spring"
-            Fc = ForceConSpr(j)
+            Fc = ForceConSpr(j,extF1,extF2,GravityInInertial)
         else
             error("Joint type not prescribed.")
         end
@@ -145,8 +145,8 @@ function ForceConSphIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
     return Fconstr
 end
 
-function ForceConSprIn(j::Joint)
-# To compute Spring force and torque
+function ForceConSprIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})
+    # To compute Spring force and torque
     posSpr1 = j.RB1.x[1:3] + transpose(j.RB1.dcm)*j.pos1 # Inertial position of spring connection on first body
     posSpr2 = j.RB2.x[1:3] + transpose(j.RB2.dcm)*j.pos2 # Inertial position of spring connection on second body
 
@@ -161,7 +161,16 @@ function ForceConSprIn(j::Joint)
     Γb2 = [0.0;j.RB2.dcm*τ2]
     Γu2 = 2*E2*Γb2
 
-    return Fc = [F2;Γu2]
+    # QuatNormConstraint
+    A = zeros(1,7); b = zeros(1)
+    A[1,:] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
+
+    b2 = j.RB2
+    M = genMatM(b2)
+    F = genExtF(b2,extF2,GravityInInertial)
+    Fconstr = ConstraintForceTorque(M,F,A,b)
+
+    return Fc = [F2+Fconstr[1:3];Γu2+Fconstr[4:7]]
 end
 # For 2 rigid bodies
 function ForceConRev(j::Joint, extF1::extForces, extF2::extForces, GravityInInertial::Vector{Float64})
@@ -245,7 +254,7 @@ function ForceConSph(j::Joint, extF1::extForces, extF2::extForces, GravityInIner
     return Fconstr
 end
 
-function ForceConSpr(j::Joint)
+function ForceConSpr(j::Joint, extF1::extForces, extF2::extForces, GravityInInertial::Vector{Float64})
     # To compute Spring force and torque
     posSpr1 = j.RB1.x[1:3] + transpose(j.RB1.dcm)*j.pos1 # Inertial position of spring connection on first body
     posSpr2 = j.RB2.x[1:3] + transpose(j.RB2.dcm)*j.pos2 # Inertial position of spring connection on second body
@@ -265,7 +274,20 @@ function ForceConSpr(j::Joint)
     Γb2 = [0.0;j.RB2.dcm*τ2]
     Γu2 = 2*E2*Γb2
 
-    return Fc = [F1;Γu1;F2;Γu2]
+    # QuatNormConstraint
+    A = zeros(2,14); b = zeros(2)
+    A = QuatNormConstraint(j)[1]; b = QuatNormConstraint(j)[2]
+    b1 = j.RB1
+    b2 = j.RB2
+    M1 = genMatM(b1)
+    M2 = genMatM(b2)
+    M = [M1 zeros(size(M1))
+         zeros(size(M1)) M2]
+
+    F = [genExtF(b1,extF1,GravityInInertial); genExtF(b2,extF2,GravityInInertial)]
+    Fconstr = ConstraintForceTorque(M,F,A,b)
+
+    return Fc = [F1+Fconstr[1:3];Γu1+Fconstr[4:7];F2+Fconstr[8:10];Γu2+Fconstr[11:14]]
 end
 # forward diff
 # Translation constraint
