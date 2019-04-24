@@ -25,26 +25,21 @@ j = Joint(RbI,R1,rj1,rj2,type="Spring",k=k, rL = l)
 tEnd = 10.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
-sol = simulate(tEnd,tSpan,j,g = g)
+tSim, solFinal = simulate(tEnd,tSpan,j,g = g)
 
-tSim = sol.t
-rSol = transpose(sol[15:17,:])
-vSol = transpose(sol[22:24,:])
-βSol = transpose(sol[18:21,:])
-βdotSol = transpose(sol[25:28,:]);
 
 # Check errNorm
-plotErrNorm(tSim,βSol)
+plotErrNorm(tSim,solFinal[1].β)
 # Check if joint location has moved
 jointLoc = Matrix{Float64}(undef,length(tSim),3)
 ωSol = Matrix{Float64}(undef,length(tSim),3)
 for i=1:length(tSim)
-    R1.dcm = quat2dcm(βSol[i,:])
-    ωSol[i,:] = angVel(βSol[i,:],βdotSol[i,:])
-    jointLoc[i,:] = rSol[i,:] + transpose(R1.dcm)*rj2
+    R1.dcm = quat2dcm(solFinal[1].β[i,:])
+    ωSol[i,:] = angVel(solFinal[1].β[i,:],solFinal[1].βdot[i,:])
+    jointLoc[i,:] = solFinal[1].r[i,:] + transpose(R1.dcm)*rj2
 end
 plotPos(tSim,jointLoc)
-plotPos(tSim,rSol)
+plotPos(tSim,solFinal[1].r)
 
 # Compare with MinReal
 solMin = load("SprMassMin.jld")
@@ -52,5 +47,11 @@ rMin = solMin["rMin"]
 vMin = solMin["vMin"]
 
 # Plotting errors
-plotPos(tSim,rMin-rSol)
-plotVel(tSim,vMin-vSol)
+plotPos(tSim,rMin-solFinal[1].r)
+plotVel(tSim,vMin-solFinal[1].v)
+
+# tSim = sol.t
+# rSol = transpose(sol[15:17,:])
+# vSol = transpose(sol[22:24,:])
+# βSol = transpose(sol[18:21,:])
+# βdotSol = transpose(sol[25:28,:]);
