@@ -15,8 +15,8 @@ using DifferentialEquations
 global GravityInInertial = Vector{Float64}(undef,3)
 
 struct solSim
-    # To store results of Simulation
-    t::Vector{Float64}
+    # Structure to store results of Simulation for each rigid body
+    # t::Vector{Float64}
     r::Matrix{Float64}
     v::Matrix{Float64}
     β::Matrix{Float64}
@@ -35,12 +35,17 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE,X0,(0.0,tEnd),j)
     sol = solve(prob,saveat=tSpan,Tsit5(),reltol=1e-10,abstol=1e-10)
-    return sol
-    # rSol = transpose(sol[1:3,:])
-    # vSol = transpose(sol[8:10,:])
-    # βSol = transpose(sol[4:7,:])
-    # βdotSol = transpose(sol[11:14,:])
-    # return solFinal = solSim(sol.t,rSol,vSol,βSol,βdotSol)
+    # return sol
+
+    solFinal = Vector{solSim}(undef,length(j))
+    for i=1:length(j)
+        rSol = transpose(sol[14*i+1:14*i+3,:])
+        vSol = transpose(sol[14*i+8:14*i+10,:])
+        βSol = transpose(sol[14*i+4:14*i+7,:])
+        βdotSol = transpose(sol[14*i+11:14*i+14,:])
+        solFinal[i] = solSim(rSol,vSol,βSol,βdotSol)
+    end
+    return (sol.t, solFinal)
 end
 
 function mainDynODE(X::Vector{Float64},j::Tuple{Joint},t::Float64)
