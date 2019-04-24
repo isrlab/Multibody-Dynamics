@@ -25,7 +25,6 @@ end
 
 function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806])
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
-
     # Initial condition (all bodies connected)
     global GravityInInertial = g
     X0 = j[1].RB1.x
@@ -48,7 +47,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0
     return (sol.t, solFinal)
 end
 
-function mainDynODE(X::Vector{Float64},j::Tuple{Joint},t::Float64)
+function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # ODE function to be used as per DifferentialEquations covnention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -82,7 +81,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Joint},t::Float64)
     return dX
 end
 
-function mainDyn(Q::Vector{Float64},j::Tuple{Joint},extFList::Vector{extForces}, ForceConstr::Array{Float64,2}, GravityInInertial::Vector{Float64})
+function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},extFList::Vector{extForces}, ForceConstr::Array{Float64,2}, GravityInInertial::Vector{Float64})
     dQ = Vector{Float64}(undef,(length(j)+1)*14)
 
     # First body always the inertial frame
