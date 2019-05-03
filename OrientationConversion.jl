@@ -83,10 +83,39 @@ function dcm2quat(q::Vector{Float64},C::Matrix{Float64})
     end
 end
 
-function dcm2quat(C::Matrix{Float64})::Vector{Float64}
-    q = Vector{Float64}(undef,4);
-    dcm2quat(q,C);
-    return(q);
+function dcm2quat(C::Matrix{T}) where T <: Real
+    q = Vector{Real}(undef,4)
+    # Apply Sheppard's algorithm
+    trace = tr(C);
+
+    v0 = 0.25*(1+trace);
+    v1 = 0.25*(1+2*C[1,1]-trace);
+    v2 = 0.25*(1+2*C[2,2]-trace);
+    v3 = 0.25*(1+2*C[3,3]-trace);
+
+    maxV = max(v0,v1,v2,v3); # Take the maximum.
+    if (v0 >= maxV)
+        q[1] = sqrt(maxV);
+        q[2] = (C[2,3]-C[3,2])/4.0/q[1];
+        q[3] = (C[3,1]-C[1,3])/4.0/q[1];
+        q[4] = (C[1,2]-C[2,1])/4.0/q[1];
+    elseif (v1 >= maxV)
+        q[2] = sqrt(maxV);
+        q[1] = (C[2,3]-C[3,2])/4.0/q[2];
+        q[3] = (C[1,2]+C[2,1])/4.0/q[2];
+        q[4] = (C[3,1]+C[1,3])/4.0/q[2];
+    elseif (v2 >= maxV)
+        q[3] = sqrt(maxV);
+        q[1] = (C[3,1]-C[1,3])/4.0/q[3];
+        q[2] = (C[1,2]+C[2,1])/4.0/q[3];
+        q[4] = (C[2,3]+C[3,2])/4.0/q[3];
+    else
+        q[4] = sqrt(maxV);
+        q[1] = (C[1,2]-C[2,1])/4.0/q[4];
+        q[2] = (C[3,1]+C[1,3])/4.0/q[4];
+        q[3] = (C[2,3]+C[3,2])/4.0/q[4];
+    end
+    return q
 end
 
 function quat2dcm(C::Matrix{T},q::Vector{T}) where T <: Real
@@ -145,14 +174,14 @@ function ang2dcm(dcm::Matrix{Float64},ang::Vector{Float64},orientation::String)
     end
 end
 
-function skewX(x::Vector{Float64})
+function skewX(x::Vector{T}) where T<: Real
     X = [    0 -x[3]  x[2]
           x[3]     0 -x[1]
          -x[2]  x[1]    0]
     return X
 end
 
-function angVel(β::Vector{Float64},βdot::Vector{Float64})
+function angVel(β::Vector{T},βdot::Vector{T}) where T<: Real
     β0 = β[1];
     β1 = β[2];
     β2 = β[3];
@@ -170,4 +199,25 @@ function genE(β::Vector{Float64})
          -β[2:4] β[1]*Matrix{Float64}(I,3,3) - skewX(β[2:4])]
     return X
 
+end
+
+# function quatProdRev(β1::Vector{Float64},β2::Vector{Float64})
+#     # Returns the Hamilton product β2*β1^-1 for the joint transformation between bodies 1 and 2
+#     β1inv = [β1[1];-β1[2:4]]
+#     β2[2:4] = quat2dcm(β1inv)*β2[2:4]
+#     x = [β2[1]*β1[1] - transpose(β2[2:4])*(-β1[2:4]);
+#          β2[1]*(-β1[2:4]) + β1[1]*β2[2:4] + cross(β2[2:4],-β1[2:4])]
+#     return x
+# end
+#
+# function axixRev(β1::Vector{Float64},β2::Vector{Float64})
+#     y = quatProdRev(β1,β2)
+#     axisInertial= y[2:4]/norm(y[2:4],2)
+#     return axisBody = quat2dcm(β1)*axisInertial
+# end
+
+function quaternionProduct(β1::Vector{T},β2::Vector{T}) where T <: Real
+    x = [β1[1]*β2[1] - dot(β1[2:4],β2[2:4]);
+         β1[2]*β2[2:4] + β2[1]*β1[2:4] + cross(β1[2:4],β2[2:4])]
+    return x
 end
