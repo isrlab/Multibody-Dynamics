@@ -155,7 +155,7 @@ function updateRigidBody(b::RigidBody,x::Vector{Float64})
     b.x = x
     b.dcm = quat2dcm(x[4:7])
     b.ω = angVel(x[4:7],x[11:14])
-    return b
+    # return b
 end
 
 function InertialFrameAsRB()
