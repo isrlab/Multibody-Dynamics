@@ -22,11 +22,16 @@ rj2 = [-0.5 0.0 0.0][:] # Joint location in body frame of second body
 
 j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axis)
 
+# External Forces Definition
+g = [0.0;0.0;-9.806]
+extFList = Vector{extForces}(undef,2)
+extFList[1] = zeroExtForce()
+extFList[2] = zeroExtForce()
+
 # Simulation
 tEnd = 1.0
 tSpan = 0.01
-g = [0.0;0.0;-9.806]
-tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g,extFVec = extFList)
 
 # After adding solSim
 plotErrNorm(tSim,solFinal[1].β)

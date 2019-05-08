@@ -7,7 +7,8 @@ clearconsole()
 
 m = 1.0; l = 1.0; r = 0.01 # Mass, length, and radius of bar
 # Assuming bar revolves about Z axis
-I1 = [m*r^2/2 0 0; 0 m*(l^2/12 + r^2/4) 0; 0 0 m*(l^2/12 + r^2/4)]
+# I1 = [m*r^2/2 0 0; 0 m*(l^2/12 + r^2/4) 0; 0 0 m*(l^2/12 + r^2/4)]
+I1 = [m*(l^2/12 + r^2/4) 0 0; 0 m*(l^2/12 + r^2/4) 0; 0 0 m*(l^2/12 + r^2/4)]
 
 # Testing Dynamics with Revolute Joint
 # System looks like this:
@@ -22,13 +23,18 @@ axis = [0.0 0.0 1.0][:] # Axis about which bar is revolving
 rj1 = [0.0 0.0 0.0][:] # Joint Location in body frame of first body
 rj2 = [0 0.0 0.0][:] # Joint location in body frame of second body
 
-j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axis)
+j = Joint(RbI,R1,rj1,rj2,type="Spherical",axis=axis)
+
+# External Forces Definition
+g = [0.0;0.0;-9.806]
+extFList = Vector{extForces}(undef,2)
+extFList[1] = zeroExtForce()
+extFList[2] = extForces(transpose((j.RB2.m)*-g),zeros(1,3),[0.0 0.0 10.0])
 
 # Simulation
-tEnd = 5.0
+tEnd = 1.0
 tSpan = 0.01
-g = [0.0;0.0;-9.806]
-tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g,extFVec = extFList)
 
 solPend  = solFinal[1]
 
