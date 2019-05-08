@@ -169,3 +169,11 @@ function InertialFrameAsRB()
     b.ω = angVel(b.x[4:7],b.x[11:14])
     return b
 end
+
+function zeroExtForce()
+    # External forces function to be changed later.
+    Forces = zeros(1,3)
+    Positions = zeros(1,3)
+    Torques = zeros(1,3)
+    return extF = extForces(Forces,Positions,Torques)
+end
