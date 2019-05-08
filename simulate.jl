@@ -13,20 +13,21 @@ using Revise
 using DifferentialEquations
 
 global GravityInInertial = Vector{Float64}(undef,3)
+global extFList = Vector{extForces}(undef,2)
 
 struct solSim
     # Structure to store results of Simulation for each rigid body
-    # t::Vector{Float64}
     r::Matrix{Float64}
     v::Matrix{Float64}
     β::Matrix{Float64}
     βdot::Matrix{Float64}
 end
 
-function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806])
+function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806],extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
     global GravityInInertial = g
+    global extFList = extFVec
     X0 = j[1].RB1.x
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)
@@ -52,20 +53,23 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
     global GravityInInertial
+    global extFList
     # Update RigidBodies
     updateRigidBody(j[1].RB1,X[1:14])
     for k=1:length(j)
         updateRigidBody(j[k].RB2,X[14*k+1:14*(k+1)])
     end
     @show t
+
     # Generate extForces for each body
-    extFList = Vector{extForces}(undef,length(j)+1)
-    extFList[1] = getExternalForce(j[1].RB1)
-    for k=2:length(j)+1
-        extFList[k] = getExternalForce(j[k-1].RB2)
-    end
+    # extFList = Vector{extForces}(undef,length(j)+1)
+    # extFList[1] = getExternalForce(j[1].RB1)
+    # for k=2:length(j)+1
+    #     extFList[k] = getExternalForce(j[k-1].RB2)
+    # end
     # extFList[2] = extForces(transpose((j[1].RB2.m)*-GravityInInertial),zeros(1,3),[10.0 0.0 0.0])
-    extFList[3] = extForces(transpose((j[1].RB2.m+j[2].RB2.m)*-GravityInInertial),zeros(1,3),[0.0 0.0 10.0])
+    # extFList[3] = extForces(transpose((j[1].RB2.m+j[2].RB2.m)*-GravityInInertial),zeros(1,3),[0.0 0.0 10.0])
+
     # Generate constraint Forces for each body using UK Formulation
     ForceConstr = Array{Float64}(undef,7,length(j)+1)
     ForceConstr[:,2] = ForceCon(j[1],extFList[1],extFList[2],GravityInInertial)
@@ -92,10 +96,10 @@ function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},extFList::Vector{ext
     return dQ
 end
 
-function getExternalForce(b::RigidBody)
-    # External forces function to be changed later.
-    Forces = zeros(1,3)
-    Positions = zeros(1,3)
-    Torques = zeros(1,3)
-    return extF = extForces(Forces,Positions,Torques)
-end
+# function getExternalForce(b::RigidBody)
+#     # External forces function to be changed later.
+#     Forces = zeros(1,3)
+#     Positions = zeros(1,3)
+#     Torques = zeros(1,3)
+#     return extF = extForces(Forces,Positions,Torques)
+# end
