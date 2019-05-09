@@ -1,4 +1,4 @@
-include("plotSol.jl")
+include("../src/plotSol.jl")
 using LinearAlgebra
 using DifferentialEquations
 using Revise

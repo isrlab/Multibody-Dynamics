@@ -2,9 +2,9 @@
 # Modeling the quadrotor frame as a cube and the props
 # as another rigid body with a revolute joint between the two.
 
-include("plotSol.jl")
-include("simulate.jl")
-include("OrientationConversion.jl")
+include("../src/plotSol.jl")
+include("../src/simulate.jl")
+include("../src/OrientationConversion.jl")
 clearconsole()
 mb = 0.155; mp = 0.02;
 

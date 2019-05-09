@@ -1,6 +1,6 @@
-include("plotSol.jl")
-include("simulate.jl")
-include("OrientationConversion.jl")
+include("../src/plotSol.jl")
+include("../src/simulate.jl")
+include("../src/OrientationConversion.jl")
 using Revise
 using JLD
 clearconsole()
