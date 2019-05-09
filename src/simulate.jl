@@ -23,6 +23,19 @@ struct solSim
     βdot::Matrix{Float64}
 end
 
+"""
+simulate(tEnd,tSpan,j;g,extFVec)
+
+tEnd: Simulation End time. (Float64) \\
+tSpan: Result saved at every specified tSpan. (Float64) \\
+j: Tuple of Joints. Length need not be specified. \\
+g: Acceleration due to gravity. Default value: [0.0;0.0;-9.806] (Vector{Float64}) \\
+extFVec: Vector of extForces acting on each rigid body. (Vector{extForces}) \\
+
+Tolerance of ode solver set. RelTol = 1e-10, AbsTol = 1e-10. \\
+Tsit5() solver used. \\
+Returns a tuple containing tSim and vector of solutions in solSim form.
+"""
 function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806],extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
