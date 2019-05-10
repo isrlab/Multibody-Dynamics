@@ -61,6 +61,15 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0
     return (sol.t, solFinal)
 end
 
+
+"""
+mainDynODE(X,j,t) \\
+X:: State vector of system at time t. \\
+j:: Tuple of Joints. (Length not specified.) \\
+
+Generates the constraint forces acting on each rigid body present in the system at time t. \\
+Supplies these forces to mainDyn function.
+"""
 function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # ODE function to be used as per DifferentialEquations covnention
     # Create extForcesList storing extForces for each rigid body
@@ -97,6 +106,17 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     return dX
 end
 
+"""
+mainDyn(Q,j,extFList,ForceConstr,GravityInInertial) \\
+
+Q:: State Vector at time t.\\
+j:: Tuple of Joints \\
+extFList:: Vector of extForces acting on each rigid body \\
+ForceConstr:: Constraint Forces generated using U-K formulation, acting on each rigid body.
+
+Main function for solving the ODE. \\
+Output: dQ = f(Q,t).
+"""
 function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},extFList::Vector{extForces}, ForceConstr::Array{Float64,2}, GravityInInertial::Vector{Float64})
     dQ = Vector{Float64}(undef,(length(j)+1)*14)
 
