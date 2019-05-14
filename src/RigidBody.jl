@@ -8,9 +8,9 @@ using LinearAlgebra
 
 
 mutable struct extForces
-    Forces::Matrix{Float64}
-    Positions::Matrix{Float64}
-    Torques::Matrix{Float64}
+    Forces::Matrix{Float64} # size n x 3 (n Forces)
+    Positions::Matrix{Float64} # size n x 3 (same size as Forces)
+    Torques::Matrix{Float64} # size m x 3 (m Torques)
 end
 
 
@@ -99,7 +99,7 @@ end
 # end
 
 function rbDynQuat(RB::RigidBody,
-    extF::extForces, Fc::Vector{Float64}, GravityInInertial::Vector{Float64})
+    extF::extForces, Fc::Vector{Float64},GravityInInertial::Vector{Float64})
 
     # States are: 14 states
     # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]
@@ -126,7 +126,7 @@ function rbDynQuat(RB::RigidBody,
 
     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
     RB.dcm = quat2dcm(β);
-
+    
     unconstrainedF = genExtF(RB,extF,GravityInInertial)
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
