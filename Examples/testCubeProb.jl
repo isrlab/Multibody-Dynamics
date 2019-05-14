@@ -8,13 +8,13 @@ include("../src/OrientationConversion.jl")
 clearconsole()
 mb = 0.155; mp = 0.02;
 
-Ib =  [ 0.0009    0.0000   -0.0001;
+Ib =  [ 0.0009    0.0000   -0.0000;
         0.0000    0.0053    0.0000;
-       -0.0001    0.0000    0.0054]*(10^-3)
+       -0.0000    0.0000    0.0054]#*(10^-3)
 
-Ip =    [ 0.0029   -0.0001    0.0000;
-         -0.0001    0.5805    0.0000;
-          0.0000    0.0000    0.5824]
+Ip =    [ 0.0029    0.0000    0.0000;
+          0.0000    0.5824    0.0000;
+          0.0000    0.0000    0.5805]*(10^-4)
 
 InFrame = InertialFrameAsRB()
 QuadCube = RigidBody(mb,Ib,"quaternions")
@@ -30,13 +30,20 @@ rjCube = [0.0 0.0 0.143][:]
 rjProp = [0.0 0.0 0.0][:]
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
-j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Spherical",axis = axis)
+j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Revolute",axis = axis,jointTorque = [0.0;0.0;0.0001])
+
+# External Forces Definition
+g = [0.0;0.0;0.0]
+extFList = Vector{extForces}(undef,3)
+extFList[1] = zeroExtForce()
+extFList[2] = extForces(transpose((j1.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
+extFList[3] = extForces(transpose((j2.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
 
 # Simulation
 tEnd = 0.1
 tSpan = 0.01
 g = [0.0;0.0;0.0]
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)
+tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g,extFVec = extFList)
 
 solQuad = solFinal[1]
 solProp = solFinal[2]
@@ -56,9 +63,12 @@ for i=1:length(tSim)
     jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
 end
 plotPos(tSim,jointLoc)
-plotAngVel(tSim,ωProp)
+plotVel(tSim,solQuad.v - solProp.v)
 plotAngVel(tSim,ωCube)
+plotAngVel(tSim,ωProp)
 plotAngVel(tSim,ωPropInCube)
+# plotAngVel(tSim,ωCube - ωProp)
+
 # # Check revJoint axis
 # axisSol = Matrix{Float64}(undef,length(tSim),3)
 # errAxis = Matrix{Float64}(undef,length(tSim),3)
