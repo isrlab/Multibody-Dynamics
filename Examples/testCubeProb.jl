@@ -40,7 +40,7 @@ extFList[2] = extForces(transpose((j1.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
 extFList[3] = extForces(transpose((j2.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
 
 # Simulation
-tEnd = 0.1
+tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g,extFVec = extFList)
