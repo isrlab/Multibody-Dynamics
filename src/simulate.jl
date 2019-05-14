@@ -83,31 +83,39 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     end
     @show t
 
-    # Generate extForces for each body
-    # extFList = Vector{extForces}(undef,length(j)+1)
-    # extFList[1] = getExternalForce(j[1].RB1)
-    # for k=2:length(j)+1
-    #     extFList[k] = getExternalForce(j[k-1].RB2)
-    # end
-    # extFList[2] = extForces(transpose((j[1].RB2.m)*-GravityInInertial),zeros(1,3),[10.0 0.0 0.0])
-    # extFList[3] = extForces(transpose((j[1].RB2.m+j[2].RB2.m)*-GravityInInertial),zeros(1,3),[0.0 0.0 10.0])
+    # Generate forces from actuated joints on each body
+    ForceJoints = Matrix{Float64}(undef,6,2*length(j))
+    for k=1:length(j)
+        ForceJoints[:,2*k-1], ForceJoints[:,2*k] = genJointF(j[k])
+    end
+    # Add ForceJoints to extFList
+    extFListCopy = deepcopy(extFList)
+    for k=1:length(j)
+        extFListCopy[k].Forces = vcat(extFList[k].Forces,reshape(ForceJoints[1:3,2*k-1],(1,3)))
+        extFListCopy[k].Positions = vcat(extFList[k].Positions,reshape(j[k].pos1,(1,3)))
+        extFListCopy[k].Torques = vcat(extFList[k].Torques,reshape(ForceJoints[4:6,2*k-1],(1,3)))
+
+        extFListCopy[k+1].Forces = vcat(extFList[k+1].Forces,reshape(ForceJoints[1:3,2*k],(1,3)))
+        extFListCopy[k+1].Positions = vcat(extFList[k+1].Positions,reshape(j[k].pos2,(1,3)))
+        extFListCopy[k+1].Torques = vcat(extFList[k+1].Torques,reshape(ForceJoints[4:6,2*k],(1,3)))
+    end
 
     # Generate constraint Forces for each body using UK Formulation
     ForceConstr = Array{Float64}(undef,7,length(j)+1)
-    ForceConstr[:,2] = ForceCon(j[1],extFList[1],extFList[2],GravityInInertial)
+    ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],GravityInInertial)
     if length(j) > 1
-        for k=2:length(j)
-            ForceConstr[:,k] = ForceCon(j[k],extFList[k],extFList[k+1],GravityInInertial)[1:7]
-            ForceConstr[:,k+1] = ForceCon(j[k],extFList[k],extFList[k+1],GravityInInertial)[8:14]
+        for k = 2:length(j)
+            ForceConstr[:,k] = ForceCon(j[k],extFListCopy[k],extFListCopy[k+1],GravityInInertial)[1:7]
+            ForceConstr[:,k+1] = ForceCon(j[k],extFListCopy[k],extFListCopy[k+1],GravityInInertial)[8:14]
         end
     end
 
-    dX = mainDyn(X,j,extFList,ForceConstr, GravityInInertial)
+    dX = mainDyn(X,j,extFListCopy,ForceConstr, GravityInInertial)
     return dX
 end
 
 """
-mainDyn(Q,j,extFList,ForceConstr,GravityInInertial) \\
+mainDyn(Q,j,extFList,ForceConstr, GravityInInertial) \\
 
 Q:: State Vector at time t.\\
 j:: Tuple of Joints \\
@@ -117,14 +125,19 @@ ForceConstr:: Constraint Forces generated using U-K formulation, acting on each 
 Main function for solving the ODE. \\
 Output: dQ = f(Q,t).
 """
-function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},extFList::Vector{extForces}, ForceConstr::Array{Float64,2}, GravityInInertial::Vector{Float64})
+function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
+    extFList::Vector{extForces}, ForceConstr::Matrix{Float64},
+    GravityInInertial::Vector{Float64})
+
     dQ = Vector{Float64}(undef,(length(j)+1)*14)
 
     # First body always the inertial frame
     dQ[1:14] = zeros(14)
     for k=1:length(j)
         # rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
-        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
+        dQ[14*k+1:14*(k+1)] =
+        rbDynQuat(j[k].RB2,extFList[k+1],
+        ForceConstr[:,k+1],GravityInInertial)
     end
     return dQ
 end
