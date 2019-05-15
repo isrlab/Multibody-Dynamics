@@ -32,7 +32,7 @@ Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
 VirtualLink = initialiseRigidBody(VirtualLink,x0Gimbal)
 
 # Joint 1 (Free) between the inertial frame and body.
-j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
+j1 = Joint(InFrame,Body,zeros(3),zeros(3))
 
 # Joint 2
 axisX = [1.0 0.0 0.0][:]
