@@ -855,19 +855,3 @@ function genExtF(b::RigidBody,extF::extForces,GravityInInertial::Vector{Float64}
     return F
     # F returned is in the inertial frame
 end
-
-function genJointF(j::Joint)
-    # For actuated joints.
-    # j.jointF gives us the actuation force and torque applied ...
-    # ... on the child link in the body frame of the parent link
-    β1 = j.RB1.x[4:7]
-    β2 = j.RB2.x[4:7]
-
-    Fb1 = -j.jointF # Joint Force acting on parent link
-    Fb2 = Vector{Float64}(undef,6) # Force acting on child link
-    Fb2[1:3] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[1:3]
-    Fb2[4:6] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[4:6]
-
-    return (Fb1,Fb2)
-
-end
