@@ -54,7 +54,7 @@ extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.010])
 tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g,extFVec = extFList)
+tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)#,extFVec = extFList)
 
 solBody = solFinal[1]
 # solVirtualLink = solFinal[2]

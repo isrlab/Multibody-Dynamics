@@ -6,6 +6,7 @@ include("RigidBody.jl")
 include("OrientationConversion.jl")
 include("Joint.jl")
 include("Force.jl")
+include("extF.jl")
 
 
 using LinearAlgebra
@@ -13,7 +14,7 @@ using Revise
 using DifferentialEquations
 
 global GravityInInertial = Vector{Float64}(undef,3)
-global extFList = Vector{extForces}(undef,2)
+# global extFList = Vector{extForces}(undef,2)
 
 struct solSim
     # Structure to store results of Simulation for each rigid body
@@ -36,11 +37,12 @@ Tolerance of ode solver set. RelTol = 1e-10, AbsTol = 1e-10. \\
 Tsit5() solver used. \\
 Returns a tuple containing tSim and vector of solutions in solSim form.
 """
-function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;g::Vector{Float64}=[0.0;0.0;-9.806],extFVec::Vector{extForces}=Vector{extForces}(undef,1))
+function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
+                  g::Vector{Float64}=[0.0;0.0;-9.806])#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
     global GravityInInertial = g
-    global extFList = extFVec
+    # global extFList = extFVec
     X0 = j[1].RB1.x
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)
@@ -75,7 +77,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
     global GravityInInertial
-    global extFList
+    extFList = extF(t,j...)
     # Update RigidBodies
     updateRigidBody(j[1].RB1,X[1:14])
     for k=1:length(j)
@@ -86,7 +88,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # Generate forces from actuated joints on each body
     ForceJoints = Matrix{Float64}(undef,6,2*length(j))
     for k=1:length(j)
-        ForceJoints[:,2*k-1], ForceJoints[:,2*k] = genJointF(j[k])
+        ForceJoints[:,2*k-1], ForceJoints[:,2*k] = genJointF(t,j[k])
     end
     # Add ForceJoints to extFList
     extFListCopy = deepcopy(extFList)
@@ -101,7 +103,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     end
 
     # Generate constraint Forces for each body using UK Formulation
-    ForceConstr = Array{Float64}(undef,7,length(j)+1)
+    ForceConstr = Matrix{Float64}(undef,7,length(j)+1)
     ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],GravityInInertial)
     if length(j) > 1
         for k = 2:length(j)
