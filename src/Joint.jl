@@ -13,7 +13,7 @@ mutable struct Joint
     RB2::RigidBody
     pos2::Vector{Float64} # Coordinates of joint in body-fixed frame of body 2
 
-    type::String # "Revolute", "Spherical", "Weld", "Free", "Spring"
+    type::String # "Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"
 
     # Revolute Joint
     axis::Vector{Float64} # Axis for revolute joint
@@ -30,7 +30,7 @@ mutable struct Joint
         axis::Vector{Float64}=zeros(3), k::Float64=0.0, rL::Float64=0.0,
         jointForce::Vector{Float64} = zeros(3), jointTorque::Vector{Float64} = zeros(3))
         # Default values for type, axis, k, and restLen provided.
-        allowedTypes = ["Revolute", "Spherical", "Weld", "Free", "Spring"]
+        allowedTypes = ["Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"]
         if !in(type,allowedTypes)
             error("Unknown joint specified.")
         end
@@ -45,7 +45,7 @@ mutable struct Joint
         this.k = k
         this.restLen = rL
         this.jointF = [jointForce;jointTorque]
-        
+
         return this
     end
 end
