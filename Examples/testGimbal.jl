@@ -6,6 +6,8 @@ include("../src/plotSol.jl")
 include("../src/simulate.jl")
 include("../src/OrientationConversion.jl")
 clearconsole()
+
+## Inertial Properties
 mb = 0.755; mg = 0.215; mp = 0.02;
 
 Ib =  [ 0.0009    0.0000   -0.0000;
@@ -20,72 +22,69 @@ Ig =    [ 0.1435    0.0000    0.0000;
           0.0000    0.0498    0.0000;
           0.0000    0.0000    0.1381]*(10^-3)
 
+## Initialisation
 InFrame = InertialFrameAsRB()
 Body = RigidBody(mb,Ib,"quaternions")
 Gimbal = RigidBody(mg,Ig,"quaternions")
-VirtualLink = RigidBody(0.0,zeros(3,3),"quaternions")
 
 x0Body = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
 Body = initialiseRigidBody(Body,x0Body)
 x0Gimbal = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
 Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
-VirtualLink = initialiseRigidBody(VirtualLink,x0Gimbal)
 
+## Joint Descriptions
 # Joint 1 (Free) between the inertial frame and body.
 j1 = Joint(InFrame,Body,zeros(3),zeros(3))
 
-# Joint 2
+# Joint 2 (Revolute2) between the body and gimbal
 axisX = [1.0 0.0 0.0][:]
 rjBody = [0.0 0.0 0.143][:]
-rjVirtualLink = [0.0 0.0 0.0][:]
-j2 = Joint(Body,VirtualLink,rjBody,rjVirtualLink,
-     type = "Revolute",axis = axisX,jointTorque = [0.0 0.0 0.0][:])
-
-# Joint 3
-axisY = [0.0 1.0 0.0][:]
-rjVirtualLink = [0.0 0.0 0.0][:]
 rjGimbal = [0.0 0.0 0.0][:]
-j3 = Joint(VirtualLink,Gimbal,rjVirtualLink,rjGimbal,
-     type="Revolute",axis = axisY,jointTorque = [0.0 0.0 0.0][:])
+j2 = Joint(Body,Gimbal,rjBody,rjGimbal,
+     type = "Revolute2",jointTorque = [0.0 0.0 0.00][:])
 
-
-# External Forces Definition
+## External Forces Definition
 g = [0.0;0.0;0.0]
-extFList = Vector{extForces}(undef,4)
+extFList = Vector{extForces}(undef,3)
 extFList[1] = zeroExtForce()
 extFList[2] = zeroExtForce()
-extFList[3] = zeroExtForce()
-extFList[4] = zeroExtForce()
+extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.010])
 
-# Simulation
+## Simulation
 tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g,extFVec = extFList)
 
 solBody = solFinal[1]
-solVirtualLink = solFinal[2]
-solGimbal = solFinal[3]
+# solVirtualLink = solFinal[2]
+solGimbal = solFinal[2]
 
+## Plotting
 plotErrNorm(tSim,solBody.β)
 plotErrNorm(tSim,solGimbal.β)
 # Check if joint location has moved
 jointLoc = Matrix{Float64}(undef,length(tSim),3)
-ωCube = Matrix{Float64}(undef,length(tSim),3)
-ωProp = Matrix{Float64}(undef,length(tSim),3)
-ωPropInCube = Matrix{Float64}(undef,length(tSim),3)
+ωBody = Matrix{Float64}(undef,length(tSim),3)
+ωGimbal = Matrix{Float64}(undef,length(tSim),3)
+ωGimbalInBody = Matrix{Float64}(undef,length(tSim),3)
 for i=1:length(tSim)
-    QuadCube.dcm = quat2dcm(solQuad.β[i,:])
-    ωCube[i,:] = angVel(solQuad.β[i,:],solQuad.βdot[i,:])
-    ωProp[i,:] = angVel(solProp.β[i,:],solProp.βdot[i,:])
-    ωPropInCube[i,:] = quat2dcm(solQuad.β[i,:])*transpose(quat2dcm(solProp.β[i,:]))*ωProp[i,:]
-    jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
+    Body.dcm = quat2dcm(solBody.β[i,:])
+    ωBody[i,:] = angVel(solBody.β[i,:],solBody.βdot[i,:])
+    ωGimbal[i,:] = angVel(solGimbal.β[i,:],solGimbal.βdot[i,:])
+    ωGimbalInBody[i,:] = quat2dcm(solBody.β[i,:])*
+                         transpose(quat2dcm(solGimbal.β[i,:]))*
+                         ωGimbal[i,:]
+    jointLoc[i,:] = solBody.r[i,:] + transpose(Body.dcm)*rjBody -
+                    solGimbal.r[i,:]
 end
 plotPos(tSim,jointLoc)
-plotVel(tSim,solQuad.v - solProp.v)
-plotAngVel(tSim,ωCube)
-plotAngVel(tSim,ωProp)
-plotAngVel(tSim,ωPropInCube)
+plotPos(tSim,solBody.r)
+plotPos(tSim,solGimbal.r)
+plotVel(tSim,solBody.v - solGimbal.v)
+plotAngVel(tSim,ωBody)
+plotAngVel(tSim,ωGimbal)
+plotAngVel(tSim,ωGimbalInBody)
 # plotAngVel(tSim,ωCube - ωProp)
 
 # # Check revJoint axis
