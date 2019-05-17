@@ -25,10 +25,10 @@ Ig =    [ 0.1435    0.0000    0.0000;
 
 ## Initialisation
 InFrame = InertialFrameAsRB()
-Body = RigidBody(mb,Ib,"quaternions")
-Gimbal = RigidBody(mg,Ig,"quaternions")
-Prop1 = RigidBody(mp,Ip,"quaternions")
-Prop2 = RigidBody(mp,Ip,"quaternions")
+Body = RigidBody(mb,Ib,2)
+Gimbal = RigidBody(mg,Ig,3)
+Prop1 = RigidBody(mp,Ip,4)
+Prop2 = RigidBody(mp,Ip,5)
 
 x0Body = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
 Body = initialiseRigidBody(Body,x0Body)
@@ -39,7 +39,7 @@ Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
 x0Prop1 = [[0.0;0.0;0.234];[1;zeros(3)];zeros(3);zeros(4)]
 Prop1 = initialiseRigidBody(Prop1,x0Prop1)
 
-x0Prop2 = [[0.0;0.0;0.234];[1;zeros(3)];zeros(3);zeros(4)]
+x0Prop2 = [[0.0;0.0;0.24];[1;zeros(3)];zeros(3);zeros(4)]
 Prop2 = initialiseRigidBody(Prop2,x0Prop2)
 
 ## Joint Descriptions
@@ -105,7 +105,7 @@ plotPos(tSim,solGimbal.r)
 plotVel(tSim,solBody.v - solGimbal.v)
 plotAngVel(tSim,ωBody)
 plotAngVel(tSim,ωGimbal)
-# plotAngVel(tSim,ωProp1)
-# plotAngVel(tSim,ωProp2)
+plotAngVel(tSim,ωProp1)
+plotAngVel(tSim,ωProp2)
 # plotAngVel(tSim,ωGimbalInBody)
 # plotAngVel(tSim,ωCube - ωProp)
