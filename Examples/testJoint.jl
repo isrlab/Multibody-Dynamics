@@ -14,8 +14,8 @@ I1 = [m*(l^2/12 + r^2/4) 0 0; 0 m*(l^2/12 + r^2/4) 0; 0 0 m*(l^2/12 + r^2/4)]
 # System looks like this:
 # ====|====     | is the joint axis.
 RbI = InertialFrameAsRB()
-R1 = RigidBody(m,I1,"quaternions")
-x0R1 = [l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+R1 = RigidBody(m,I1,2)
+x0R1 = [0.0;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
 R1 = initialiseRigidBody(R1,x0R1)
 
 axis = [0.0 0.0 1.0][:] # Axis about which bar is revolving
@@ -23,18 +23,16 @@ axis = [0.0 0.0 1.0][:] # Axis about which bar is revolving
 rj1 = [0.0 0.0 0.0][:] # Joint Location in body frame of first body
 rj2 = [0 0.0 0.0][:] # Joint location in body frame of second body
 
-j = Joint(RbI,R1,rj1,rj2,type="Spherical",axis=axis)
+j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axis)
 
 # External Forces Definition
 g = [0.0;0.0;-9.806]
 extFList = Vector{extForces}(undef,2)
-extFList[1] = zeroExtForce()
-extFList[2] = extForces(transpose((j.RB2.m)*-g),zeros(1,3),[0.0 0.0 10.0])
 
 # Simulation
 tEnd = 1.0
 tSpan = 0.01
-tSim, solFinal = simulate(tEnd,tSpan,j,g=g,extFVec = extFList)
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
 
 solPend  = solFinal[1]
 
@@ -53,7 +51,7 @@ for i=1:length(tSim)
 end
 plotPos(tSim,jointLoc)
 plotPos(tSim,solPend.r)
-plotAngVel(tSim,ωSol)
 plotPos(tSim,rEnd)
 plotQuat(tSim,solPend.β)
+plotAngVel(tSim,ωSol)
 # plotQuatDot(tSim,solPend.βdot)
