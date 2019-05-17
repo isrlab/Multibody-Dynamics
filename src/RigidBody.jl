@@ -20,6 +20,7 @@ mutable struct RigidBody
     orientation::String; # "321", "quaternions". Only these two supported now.
     # This will determine how many states there are
     # 12 for euler angle, 13 for quartenions.
+    bodyID::Integer # Body number in robot tree
 
     # Internal variables
     x::Vector{Float64};    # State vector
@@ -28,14 +29,14 @@ mutable struct RigidBody
     J::Matrix{Float64} # 4x4 Inertia with first elemtn a random positive number
     invJ::Matrix{Float64} # inverse of 4x4 inertia matrix
     ω::Vector{Float64} # Angular velocity in body frame
-    function RigidBody(mass::Float64, Inertia::Matrix{Float64}, orientation::String)
-        if orientation == "321"
-            x0 = Vector{Float64}(undef,12); # 12 state vector
-        elseif lowercase(orientation) == "quaternions"
-            x0 = Vector{Float64}(undef,14); # 14 state vector
-        else
-            error("Unknown orientation specified")
-        end
+    function RigidBody(mass::Float64, Inertia::Matrix{Float64}, bodyID::Integer; orientation::String = "quaternions")
+        # if orientation == "321"
+        #     x0 = Vector{Float64}(undef,12); # 12 state vector
+        # elseif lowercase(orientation) == "quaternions"
+        x0 = Vector{Float64}(undef,14); # 14 state vector
+        # else
+        #     error("Unknown orientation specified")
+        # end
 
         dcm = Matrix{Float64}(undef,3,3);
 
@@ -55,6 +56,7 @@ mutable struct RigidBody
         this = new();
         this.m = mass;
         this.In = Inertia;
+        this.bodyID = bodyID
         this.orientation = lowercase(orientation);
         this.dcm = dcm
         this.x = x0;
@@ -126,7 +128,7 @@ function rbDynQuat(RB::RigidBody,
 
     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
     RB.dcm = quat2dcm(β);
-    
+
     unconstrainedF = genExtF(RB,extF,GravityInInertial)
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
@@ -161,9 +163,8 @@ end
 function InertialFrameAsRB()
     m = 0.0
     I = zeros(3,3)
-    orientation = "quaternions"
 
-    b = RigidBody(m,I,orientation)
+    b = RigidBody(m,I,1)
     b.x = [zeros(3);1;zeros(3);zeros(3);zeros(4)]
     b.dcm = quat2dcm(b.x[4:7])
     b.ω = angVel(b.x[4:7],b.x[11:14])
