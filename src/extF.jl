@@ -9,9 +9,11 @@ function extF(t::Float64,j::Joint...)
     extFList = Vector{extForces}(undef,length(j)+1)
     extFList[1] = zeroExtForce() # First body always the inertial frame
 
-    # Gimbal test
+    # CoAxCop
     extFList[2] = zeroExtForce()
-    extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.000])
+    extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    extFList[5] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     return extFList
 end
