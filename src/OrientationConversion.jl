@@ -130,7 +130,7 @@ function quat2dcm(C::Matrix{T},q::Vector{T}) where T <: Real
 end
 
 function quat2dcm(q::Vector{T}) where T <: Real
-# ForwardDiff has problems with inplace function definitions
+    # ForwardDiff has problems with inplace function definitions
     β0 = q[1];
     β1 = q[2];
     β2 = q[3];
