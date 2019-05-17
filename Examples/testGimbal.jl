@@ -43,13 +43,6 @@ rjGimbal = [0.0 0.0 0.0][:]
 j2 = Joint(Body,Gimbal,rjBody,rjGimbal,
      type = "Revolute2",jointTorque = [0.0 0.0 0.00][:])
 
-## External Forces Definition
-g = [0.0;0.0;0.0]
-extFList = Vector{extForces}(undef,3)
-extFList[1] = zeroExtForce()
-extFList[2] = zeroExtForce()
-extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.010])
-
 ## Simulation
 tEnd = 1.0
 tSpan = 0.01
