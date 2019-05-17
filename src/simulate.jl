@@ -108,7 +108,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
         extFListCopy[j[k].RB2.bodyID].Torques =
         vcat(extFListCopy[j[k].RB2.bodyID].Torques,reshape(ForceJoints[4:6,2*k],(1,3)))
     end
-    
+
     # Generate constraint Forces for each body using UK Formulation
     ForceConstr = Matrix{Float64}(undef,7,length(j)+1)
     ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],GravityInInertial)
@@ -120,7 +120,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
             ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],extFListCopy[j[k].RB2.bodyID],GravityInInertial)[8:14]
         end
     end
-
+        
     dX = mainDyn(X,j,extFListCopy,ForceConstr, GravityInInertial)
     return dX
 end
