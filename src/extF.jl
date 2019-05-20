@@ -15,10 +15,14 @@ function extF(t::Float64,j::Joint...)
     #                 zeros(1,3),[0.0 10.0 0.0])
 
     # CoAxCop
-    extFList[2] = zeroExtForce()
-    extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.001 0.0 0.0])
+    extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.001 0.0 0.0])
+    extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
     extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
     extFList[5] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+
+    # Gimbal test
+    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.001 0.0 0.0])
+    # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     return extFList
 end
