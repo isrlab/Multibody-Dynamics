@@ -668,7 +668,7 @@ end
 # end
 
 function RevJointConstraint(j::Joint)::Tuple
-    # Attempting ω of body 2 in body 1 frame only has component about the joint axis
+    # Attempting relative angular ω between bodies in body 1 frame only has component about the joint axis
     b1 = j.RB1
     b2 = j.RB2
     β1 = b1.x[4:7]
@@ -676,19 +676,22 @@ function RevJointConstraint(j::Joint)::Tuple
     β1dot = b1.x[11:14]
     β2dot = b2.x[11:14]
     axis = j.axis
-    βaug = [β1;β2;β2dot]
+    βaug = [β1;β1dot;β2;β2dot]
     function f(y::Vector{T}) where T <: Real
-        y1  = y[1:4]; #β1
-        y2 = y[5:8]; y2dot = y[9:12] #β2;β2dot
+        y1  = y[1:4]; y1dot = y[5:8]#β1
+        y2 = y[9:12]; y2dot = y[13:16] #β2;β2dot
         ωb2 = angVel(y2,y2dot)
+        ωb1 = angVel(y1,y1dot)
         ωb2inb1 = quat2dcm(y1)*transpose(quat2dcm(y2))*ωb2
-        return ωb2inb1
+        relAngVel = ωb2inb1 - ωb1
+        return relAngVel
     end
     fJac = z->ForwardDiff.jacobian(f,z)
 
     Ax = zeros(3,14); bx = zeros(3)
-    Ax[:,11:14] = fJac(βaug)[:,9:12]
-    bx = -fJac(βaug)[:,1:4]*β1dot - fJac(βaug)[:,5:8]*β2dot
+    Ax[:,4:7] = fJac(βaug)[:,5:8]
+    Ax[:,11:14] = fJac(βaug)[:,13:16]
+    bx = -fJac(βaug)[:,1:4]*β1dot - fJac(βaug)[:,9:12]*β2dot
 
     zAxis = findall(iszero,axis)
     A = zeros(2,14); b = zeros(2)
