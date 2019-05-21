@@ -9,78 +9,189 @@ using ForwardDiff
 using Revise
 
 function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
-
+    A = Matrix{Float64}[]
+    bfinal = Float64[]
     for i = 1:length(j)
-        # Call corresponding joint function to get A, b, F.
+        b1 = j[i].RB1.bodyID; b2 = j[i].RB2.bodyID
+        Aj,bj = ForceCon(j[i])
+        push!(A,Aj)
+        bfinal = vcat(bfinal,bj)
+        # Call corresponding joint function to get A, b
     end
-
-    # Assemble M, A, b, F.
-
+    # Assemble A. b is already assembled.
+    Afinal = assembleA(j,A)
+    # Assemble M
+    Mfinal = assembleM(j)
+    # Assemble F.
+    Ffinal = assembleF(j,extFList,GravityInInertial)
     # Call ConstraintForceTorque with assembled matrices.
-
+    # f = genExtF(j[4].RB2,extFList[5],GravityInInertial);
+    # # @show Afinal[1,1:14]
+    # @show a
+    # c = Ffinal[22:28] - f
+    # @show c
+    Fc = ConstraintForceTorque(Mfinal,Ffinal,Afinal,bfinal)
     # Partition generated ForceConstr for each rigid body.
-
+    ForceConstr = zeros(7,length(j)+1)
+    for i=1:length(j)
+        k = j[i].RB2.bodyID
+        ForceConstr[:,k] = Fc[7*(k-2)+1:7*(k-1)]
+    end
     # Return ForceConstr.
-
+    return ForceConstr
 end
 
+function assembleA(j::Tuple{Vararg{Joint}},
+    A::Vector{Matrix{Float64}})
 
-function ForceCon(j::Joint,extF1::extForces,extF2::extForces,
-    Fc1::Vector{Float64},Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+    # assuming final joint's RB2 has the max bodyID
+    nCols = 7*(j[end].RB2.bodyID-1);
+
+    nRows = 0; nR = Int64[]
+    for i=1:length(j)
+        nRows = nRows + size(A[i],1)
+        push!(nR,nRows)
+    end
+    Afinal = zeros(nRows,nCols)
+    for i=1:length(j)
+        if i>1
+            b1 = j[i].RB1.bodyID - 1; b2 = j[i].RB2.bodyID - 1;
+            Afinal[nR[i-1]+1:nR[i],7*(b1-1)+1:7*b1] = A[i][:,1:7]
+            Afinal[nR[i-1]+1:nR[i],7*(b2-1)+1:7*b2] = A[i][:,8:14]
+        else
+            Afinal[1:nR[1],1:7] = A[1][:,1:7]
+        end
+    end
+    return Afinal
+end
+
+function assembleM(j)
+    maxBodyID = j[end].RB2.bodyID
+    v = collect(3:maxBodyID)
+
+    Mfinal = zeros(7*(maxBodyID-1),7*(maxBodyID-1))
+    # First body always connected to inertial frame
+    Mfinal[1:7,1:7] = genMatM(j[1].RB2)
+
+    # Iterate over joints
+    for i = 2:length(j)
+        b1 = j[i].RB1; b2 = j[i].RB2;
+        if b2.bodyID in v
+            Mfinal[7*(i-1)+1:7*i,7*(i-1)+1:7*i] = genMatM(b2)
+            # Remove corresponding element from v
+            filter!(x->x≠b2.bodyID,v)
+        end
+    end
+    return Mfinal
+end
+
+function assembleF(j, extFList, GravityInInertial)
+    maxBodyID = j[end].RB2.bodyID
+    F = Vector{Float64}(undef,7*(maxBodyID-1))
+
+    for i=1:length(j)
+        k = j[i].RB2.bodyID - 1
+        F[7*(k-1)+1:7*k] =
+        genExtF(j[i].RB2,extFList[k+1],GravityInInertial)
+    end
+    return F
+end
+
+function ForceCon(j::Joint)
     if(j.RB1.m == 0.0)
         # Joint to world. Body is connected to the Inertial frame.
         if j.type == "Revolute"
-            Fc = ForceConRevIn(j,extF2,GravityInInertial)
+            A,b = ForceConRevIn(j)
         elseif j.type == "Revolute2"
-            Fc = ForceConRev2In(j,extF2,GravityInInertial)
+            A,b = ForceConRev2In(j)
         elseif j.type == "Spherical"
-            Fc = ForceConSphIn(j,extF2,GravityInInertial)
+            A,b = ForceConSphIn(j)
         elseif j.type == "Weld"
-            Fc = ForceConWeldAllIn(j,extF2,GravityInInertial)
+            A,b = ForceConWeldAllIn(j)
         elseif j.type == "Free"
-            Fc = ForceFree(j,extF2,GravityInInertial)
+            A,b = ForceFree(j)
         elseif j.type == "Spring"
-            Fc = ForceConSprIn(j,extF2,GravityInInertial)
+            A,b = ForceConSprIn(j)
         else
             error("Joint type not prescribed.")
         end
     else
         if j.type == "Revolute"
-            Fc = ForceConRev(j,extF1,extF2,Fc1,Fc2,GravityInInertial)
+            A,b = ForceConRev(j)
         elseif j.type == "Revolute2"
-            Fc = ForceConRev2(j,extF1,extF2,GravityInInertial)
+            A,b = ForceConRev2(j)
         elseif j.type == "Spherical"
-            Fc = ForceConSph(j,extF1,extF2,GravityInInertial)
+            A,b = ForceConSph(j)
         elseif j.type == "Weld"
-            Fc = ForceConWeldAll(j,extF1,extF2,GravityInInertial)
+            A,b = ForceConWeldAll(j)
         elseif j.type == "Spring"
-            Fc = ForceConSpr(j,extF1,extF2,GravityInInertial)
+            A,b = ForceConSpr(j)
         else
             error("Joint type not prescribed.")
         end
     end
-    return Fc
+    return A,b
 end
 
+
+# function ForceCon(j::Joint,extF1::extForces,extF2::extForces,
+#     Fc1::Vector{Float64},Fc2::Vector{Float64},
+#     GravityInInertial::Vector{Float64})::Vector{Float64}
+#     if(j.RB1.m == 0.0)
+#         # Joint to world. Body is connected to the Inertial frame.
+#         if j.type == "Revolute"
+#             Fc = ForceConRevIn(j,extF2,GravityInInertial)
+#         elseif j.type == "Revolute2"
+#             Fc = ForceConRev2In(j,extF2,GravityInInertial)
+#         elseif j.type == "Spherical"
+#             Fc = ForceConSphIn(j,extF2,GravityInInertial)
+#         elseif j.type == "Weld"
+#             Fc = ForceConWeldAllIn(j,extF2,GravityInInertial)
+#         elseif j.type == "Free"
+#             Fc = ForceFree(j,extF2,GravityInInertial)
+#         elseif j.type == "Spring"
+#             Fc = ForceConSprIn(j,extF2,GravityInInertial)
+#         else
+#             error("Joint type not prescribed.")
+#         end
+#     else
+#         if j.type == "Revolute"
+#             Fc = ForceConRev(j,extF1,extF2,Fc1,Fc2,GravityInInertial)
+#         elseif j.type == "Revolute2"
+#             Fc = ForceConRev2(j,extF1,extF2,GravityInInertial)
+#         elseif j.type == "Spherical"
+#             Fc = ForceConSph(j,extF1,extF2,GravityInInertial)
+#         elseif j.type == "Weld"
+#             Fc = ForceConWeldAll(j,extF1,extF2,GravityInInertial)
+#         elseif j.type == "Spring"
+#             Fc = ForceConSpr(j,extF1,extF2,GravityInInertial)
+#         else
+#             error("Joint type not prescribed.")
+#         end
+#     end
+#     return Fc
+# end
+
 # For inertial frame and body
-function ForceFree(j::Joint,extF::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceFree(j::Joint)#,extF::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated due to quaternion constraint
     b2 = j.RB2
 
 
     # Revolute Joint has 7 constraints
-    A = zeros(1,7); b = [0.0];
-    A[1,:] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
+    A = zeros(1,14); b = [0.0];
+    A[1,1:7] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
 
-    M = genMatM(b2)
+    # M = genMatM(b2)
+#
+    # F = genExtF(b2,extF,GravityInInertial)
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
+    # return Fconstr
 
-    F = genExtF(b2,extF,GravityInInertial)
-    Fconstr = ConstraintForceTorque(M,F,A,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConRevIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConRevIn(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by revolute joint
     b2 = j.RB2
 
@@ -90,17 +201,16 @@ function ForceConRevIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
     A[4,:] = QuatNormConstraint(j)[1][2,:]; b[4] = QuatNormConstraint(j)[2][2]
     A[5:end,:] = RevJointConstraint(j)[1]; b[5:end] = RevJointConstraint(j)[2]
 
-    A_in = A[:,8:14]
+    # A_in = A[:,8:14]
+    # M = genMatM(b2)
+    # F = genExtF(b2,extF2,GravityInInertial)
+    # Fconstr = ConstraintForceTorque(M,F,A_in,b)
+    # return Fconstr
 
-    M = genMatM(b2)
-
-    F = genExtF(b2,extF2,GravityInInertial)
-
-    Fconstr = ConstraintForceTorque(M,F,A_in,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConRev2In(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConRev2In(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by 2revolute joint
     b2 = j.RB2
 
@@ -110,17 +220,15 @@ function ForceConRev2In(j::Joint, extF2::extForces, GravityInInertial::Vector{Fl
     A[4,:] = QuatNormConstraint(j)[1][2,:]; b[4] = QuatNormConstraint(j)[2][2]
     A[5,:] = RevJointConstraint(j)[1]; b[5] = RevJointConstraint(j)[2]
 
-    A_in = A[:,8:14]
-
-    M = genMatM(b2)
-
-    F = genExtF(b2,extF2,GravityInInertial)
-
-    Fconstr = ConstraintForceTorque(M,F,A_in,b)
-    return Fconstr
+    # A_in = A[:,8:14]
+    # M = genMatM(b2)
+    # F = genExtF(b2,extF2,GravityInInertial)
+    # Fconstr = ConstraintForceTorque(M,F,A_in,b)
+    # return Fconstr
+    return (A,b)
 end
 
-function ForceConWeldAllIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConWeldAllIn(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by weld joint
     b2 = j.RB2
 
@@ -129,34 +237,37 @@ function ForceConWeldAllIn(j::Joint, extF2::extForces, GravityInInertial::Vector
     A[1:3,:] = TranslationConstraint(j)[1]; b[1:3] = TranslationConstraint(j)[2]
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
     A[6:9,:] = WeldJointAllConstraint(j)[1]; b[6:9] = WeldJointAllConstraint(j)[2]
-    A_in = A[:,8:14]
 
-    M = genMatM(b2)
+    # A_in = A[:,8:14]
+    # M = genMatM(b2)
+    # F = genExtF(b2,extF2,GravityInInertial)
+    # Fconstr = ConstraintForceTorque(M,F,A_in,b)
+    # return Fconstr
 
-    F = genExtF(b2,extF2,GravityInInertial)
-
-    Fconstr = ConstraintForceTorque(M,F,A_in,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConSphIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConSphIn(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by spherical joint
     b2 = j.RB2
 
     # Spherical Joint leaves 3 degrees of freedom (remove 4 constraints)
-    A = zeros(4,7); b = zeros(4)
-    A[1:3,:] = TranslationConstraint(j)[1][:,8:14]; b[1:3] = TranslationConstraint(j)[2]
-    A[4,:] = QuatNormConstraint(j)[1][2,8:14]; b[4] = QuatNormConstraint(j)[2][2]
+    A = zeros(4,14); b = zeros(4)
+    A[1:3,:] = TranslationConstraint(j)[1]; b[1:3] = TranslationConstraint(j)[2]
+    A[4,:] = QuatNormConstraint(j)[1][2,:]; b[4] = QuatNormConstraint(j)[2][2]
 
-    M = genMatM(b2)
+    # A = zeros(4,7); b = zeros(4)
+    # A[1:3,:] = TranslationConstraint(j)[1][:,8:14]; b[1:3] = TranslationConstraint(j)[2]
+    # A[4,:] = QuatNormConstraint(j)[1][2,8:14]; b[4] = QuatNormConstraint(j)[2][2]
+    # M = genMatM(b2)
+    # F = genExtF(b2,extF2,GravityInInertial)
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
+    # return Fconstr
 
-    F = genExtF(b2,extF2,GravityInInertial)
-
-    Fconstr = ConstraintForceTorque(M,F,A,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConSprIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConSprIn(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # To compute Spring force and torque
     posSpr1 = j.RB1.x[1:3] + transpose(j.RB1.dcm)*j.pos1 # Inertial position of spring connection on first body
     posSpr2 = j.RB2.x[1:3] + transpose(j.RB2.dcm)*j.pos2 # Inertial position of spring connection on second body
@@ -185,9 +296,7 @@ function ForceConSprIn(j::Joint, extF2::extForces, GravityInInertial::Vector{Flo
 end
 
 # For 2 rigid bodies
-function ForceConRev(j::Joint, extF1::extForces, extF2::extForces,
-    Fc1::Vector{Float64}, Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConRev(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Vector{Float64}, Fc2::Vector{Float64}, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by revolute joint
     b1 = j.RB1
     b2 = j.RB2
@@ -199,25 +308,24 @@ function ForceConRev(j::Joint, extF1::extForces, extF2::extForces,
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
     A[6:end,:] = RevJointConstraint(j)[1]; b[6:end] = RevJointConstraint(j)[2]
 
-    M1 = genMatM(b1)
-    M2 = genMatM(b2)
-    M = [M1 zeros(size(M1))
-         zeros(size(M1)) M2]
-
-    F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
-         genExtF(b2,extF2,GravityInInertial) + Fc2]
-    Fconstr = ConstraintForceTorque(M,F,A,b)
+    # M1 = genMatM(b1)
+    # M2 = genMatM(b2)
+    # M = [M1 zeros(size(M1))
+    #      zeros(size(M1)) M2]
+    #
+    # F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
+    #      genExtF(b2,extF2,GravityInInertial) + Fc2]
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
     # if j.RB1.bodyID == 3
     #     @show F[1:7]
     #     @show Fconstr[1:7]
     # end
-
-    return Fconstr
+#
+    # return Fconstr
+    return (A,b)
 end
 
-function ForceConRev2(j::Joint, extF1::extForces, extF2::extForces,
-    Fc1::Vector{Float64}, Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConRev2(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Vector{Float64}, Fc2::Vector{Float64},    GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by revolute joint
     b1 = j.RB1
     b2 = j.RB2
@@ -228,20 +336,19 @@ function ForceConRev2(j::Joint, extF1::extForces, extF2::extForces,
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
     A[6,:] = RevJoint2Constraint(j)[1]; b[6] = RevJoint2Constraint(j)[2]
 
-    M1 = genMatM(b1)
-    M2 = genMatM(b2)
-    M = [M1 zeros(size(M1))
-         zeros(size(M1)) M2]
+    # M1 = genMatM(b1)
+    # M2 = genMatM(b2)
+    # M = [M1 zeros(size(M1))
+    #      zeros(size(M1)) M2]
+    # F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
+    #      genExtF(b2,extF2,GravityInInertial) + Fc2]
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
+    # return Fconstr
 
-    F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
-         genExtF(b2,extF2,GravityInInertial) + Fc2]
-    Fconstr = ConstraintForceTorque(M,F,A,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConWeldAll(j::Joint, extF1::extForces, extF2::extForces,
-    Fc1::Vector{Float64}, Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConWeldAll(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Vector{Float64}, Fc2::Vector{Float64},    GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by weld joint
     b1 = j.RB1
     b2 = j.RB2
@@ -252,21 +359,19 @@ function ForceConWeldAll(j::Joint, extF1::extForces, extF2::extForces,
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
     A[6:9,:] = WeldJointAllConstraint(j)[1]; b[6:9] = WeldJointAllConstraint(j)[2]
 
-    M1 = genMatM(b1)
-    M2 = genMatM(b2)
-    M = [M1 zeros(size(M1))
-         zeros(size(M1)) M2]
+    # M1 = genMatM(b1)
+    # M2 = genMatM(b2)
+    # M = [M1 zeros(size(M1))
+    #      zeros(size(M1)) M2]
+    # F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
+    #      genExtF(b2,extF2,GravityInInertial) + Fc2]
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
+    # return Fconstr
 
-    F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
-         genExtF(b2,extF2,GravityInInertial) + Fc2]
-
-    Fconstr = ConstraintForceTorque(M,F,A,b)
-    return Fconstr
+    return (A,b)
 end
 
-function ForceConSph(j::Joint, extF1::extForces, extF2::extForces,
-    Fc1::Vector{Float64}, Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConSph(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Vector{Float64}, Fc2::Vector{Float64}, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by spherical joint
     b1 = j.RB1
     b2 = j.RB2
@@ -277,20 +382,17 @@ function ForceConSph(j::Joint, extF1::extForces, extF2::extForces,
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
 
     M1 = genMatM(b1)
-    M2 = genMatM(b2)
-    M = [M1 zeros(size(M1))
-         zeros(size(M1)) M2]
-
-    F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
-         genExtF(b2,extF2,GravityInInertial) + Fc2]
-
-    Fconstr = ConstraintForceTorque(M,F,A,b)
-    return Fconstr
+    # M2 = genMatM(b2)
+    # M = [M1 zeros(size(M1))
+    #      zeros(size(M1)) M2]
+    # F = [genExtF(b1,extF1,GravityInInertial) + Fc1;
+    #      genExtF(b2,extF2,GravityInInertial) + Fc2]
+    # Fconstr = ConstraintForceTorque(M,F,A,b)
+    # return Fconstr
+    return (A,b)
 end
 
-function ForceConSpr(j::Joint, extF1::extForces, extF2::extForces,
-    Fc1::Vector{Float64}, Fc2::Vector{Float64},
-    GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConSpr(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Vector{Float64}, Fc2::Vector{Float64},     GravityInInertial::Vector{Float64})::Vector{Float64}
     # To compute Spring force and torque
     posSpr1 = j.RB1.x[1:3] + transpose(j.RB1.dcm)*j.pos1 # Inertial position of spring connection on first body
     posSpr2 = j.RB2.x[1:3] + transpose(j.RB2.dcm)*j.pos2 # Inertial position of spring connection on second body
