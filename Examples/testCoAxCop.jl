@@ -58,7 +58,7 @@ axisZ = [0.0 0.0 1.0][:]
 rjGimbal2 = [0.0 0.0 0.091][:]
 rjProp1 = [0.0 0.0 0.0][:]
 j3 = Joint(Gimbal,Prop1,rjGimbal2,rjProp1,
-     type = "Revolute",axis = axisZ, jointTorque = [0.0 0.0 0.00][:])
+     type = "Revolute",axis = axisZ)#, jointTorque = [0.0 0.0 0.00][:])
 
 
 # Joint 2 (Revolute2) between the body and gimbal
@@ -66,7 +66,7 @@ axisZ = [0.0 0.0 1.0][:]
 rjGimbal3 = [0.0 0.0 0.097][:]
 rjProp2 = [0.0 0.0 0.0][:]
 j4 = Joint(Gimbal,Prop2,rjGimbal3,rjProp2,
-     type = "Revolute", axis = axisZ, jointTorque = [0.0 0.0 0.00][:])
+     type = "Revolute", axis = axisZ)#, jointTorque = [0.0 0.0 0.00][:])
 
 
 ## Simulation
@@ -90,6 +90,9 @@ jointLoc4 = Matrix{Float64}(undef,length(tSim),3)
 ωProp1 = Matrix{Float64}(undef,length(tSim),3)
 ωProp2 = Matrix{Float64}(undef,length(tSim),3)
 ωGimbalInBody = Matrix{Float64}(undef,length(tSim),3)
+ωRel1 = Matrix{Float64}(undef,length(tSim),3)
+ωRel2 = Matrix{Float64}(undef,length(tSim),3)
+ωRel3 = Matrix{Float64}(undef,length(tSim),3)
 for i=1:length(tSim)
     Body.dcm = quat2dcm(solBody.β[i,:])
     Gimbal.dcm = quat2dcm(solGimbal.β[i,:])
@@ -102,6 +105,13 @@ for i=1:length(tSim)
     ωGimbalInBody[i,:] = quat2dcm(solBody.β[i,:])*
                          transpose(quat2dcm(solGimbal.β[i,:]))*
                          ωGimbal[i,:]
+    ωRel1[i,:] = ωGimbalInBody[i,:] - ωBody[i,:]
+    ωRel2[i,:] = quat2dcm(solGimbal.β[i,:])*
+                 transpose(quat2dcm(solProp1.β[i,:]))*
+                 ωProp1[i,:] - ωGimbal[i,:]
+    ωRel3[i,:] = quat2dcm(solGimbal.β[i,:])*
+                 transpose(quat2dcm(solProp2.β[i,:]))*
+                 ωProp2[i,:] - ωGimbal[i,:]
     jointLoc2[i,:] = solBody.r[i,:] + transpose(Body.dcm)*rjBody -
                      solGimbal.r[i,:] -
                      transpose(Gimbal.dcm)*rjGimbal1
@@ -115,7 +125,7 @@ end
 
 ## Plotting
 # Joint Locations
-plotPos(tSim,jointLoc2)
+plotPos(tSim,jointLoc4)
 plotPos(tSim,solBody.r)
 plotPos(tSim,solGimbal.r)
 
@@ -126,6 +136,9 @@ plotErrNorm(tSim,solProp2.β)
 
 plotAngVel(tSim,ωBody)
 plotAngVel(tSim,ωGimbal)
+plotAngVel(tSim,ωRel1)
+plotAngVel(tSim,ωRel2)
+plotAngVel(tSim,ωRel3)
 # plotAngVel(tSim,ωProp1)
 # plotAngVel(tSim,ωProp2)
 # plotAngVel(tSim,ωGimbalInBody)
