@@ -70,7 +70,7 @@ j4 = Joint(Gimbal,Prop2,rjGimbal3,rjProp2,
 
 
 ## Simulation
-tEnd = 0.1
+tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,j3,j4,g=g)#,extFVec = extFList)
@@ -136,10 +136,10 @@ plotErrNorm(tSim,solProp2.β)
 
 plotAngVel(tSim,ωBody)
 plotAngVel(tSim,ωGimbal)
+plotAngVel(tSim,ωProp1)
+plotAngVel(tSim,ωProp2)
 plotAngVel(tSim,ωRel1)
 plotAngVel(tSim,ωRel2)
 plotAngVel(tSim,ωRel3)
-# plotAngVel(tSim,ωProp1)
-# plotAngVel(tSim,ωProp2)
 # plotAngVel(tSim,ωGimbalInBody)
 # plotAngVel(tSim,ωCube - ωProp)
