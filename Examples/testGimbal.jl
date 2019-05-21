@@ -24,8 +24,8 @@ Ig =    [ 0.1435    0.0000    0.0000;
 
 ## Initialisation
 InFrame = InertialFrameAsRB()
-Body = RigidBody(mb,Ib,"quaternions")
-Gimbal = RigidBody(mg,Ig,"quaternions")
+Body = RigidBody(mb,Ib,2)
+Gimbal = RigidBody(mg,Ig,3)
 
 x0Body = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
 Body = initialiseRigidBody(Body,x0Body)
@@ -37,11 +37,11 @@ Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
 j1 = Joint(InFrame,Body,zeros(3),zeros(3))
 
 # Joint 2 (Revolute2) between the body and gimbal
-axisX = [1.0 0.0 0.0][:]
-rjBody = [0.0 0.0 0.143][:]
-rjGimbal = [0.0 0.0 0.0][:]
+axisZ = [0.0 0.0 1.0][:]
+rjBody = [0.0 0.0 0.134][:]
+rjGimbal = [0.0 0.0 -0.009][:]
 j2 = Joint(Body,Gimbal,rjBody,rjGimbal,
-     type = "Revolute2",jointTorque = [0.0 0.0 0.00][:])
+     type = "Revolute",axis = axisZ, jointTorque = [0.0 0.0 0.0][:])
 
 ## Simulation
 tEnd = 1.0
@@ -50,7 +50,6 @@ g = [0.0;0.0;0.0]
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)#,extFVec = extFList)
 
 solBody = solFinal[1]
-# solVirtualLink = solFinal[2]
 solGimbal = solFinal[2]
 
 ## Plotting
@@ -61,23 +60,28 @@ jointLoc = Matrix{Float64}(undef,length(tSim),3)
 ωBody = Matrix{Float64}(undef,length(tSim),3)
 ωGimbal = Matrix{Float64}(undef,length(tSim),3)
 ωGimbalInBody = Matrix{Float64}(undef,length(tSim),3)
+ωRel = Matrix{Float64}(undef,length(tSim),3) # Relative
 for i=1:length(tSim)
     Body.dcm = quat2dcm(solBody.β[i,:])
+    Gimbal.dcm = quat2dcm(solGimbal.β[i,:])
     ωBody[i,:] = angVel(solBody.β[i,:],solBody.βdot[i,:])
     ωGimbal[i,:] = angVel(solGimbal.β[i,:],solGimbal.βdot[i,:])
     ωGimbalInBody[i,:] = quat2dcm(solBody.β[i,:])*
                          transpose(quat2dcm(solGimbal.β[i,:]))*
                          ωGimbal[i,:]
+    ωRel[i,:] = ωGimbalInBody[i,:] - ωBody[i,:]
     jointLoc[i,:] = solBody.r[i,:] + transpose(Body.dcm)*rjBody -
-                    solGimbal.r[i,:]
+                    solGimbal.r[i,:] - transpose(Gimbal.dcm)*rjGimbal
 end
 plotPos(tSim,jointLoc)
 plotPos(tSim,solBody.r)
 plotPos(tSim,solGimbal.r)
-plotVel(tSim,solBody.v - solGimbal.v)
+plotVel(tSim,solBody.v)
+plotVel(tSim,solGimbal.v)
 plotAngVel(tSim,ωBody)
 plotAngVel(tSim,ωGimbal)
 plotAngVel(tSim,ωGimbalInBody)
+plotAngVel(tSim,ωRel)
 # plotAngVel(tSim,ωCube - ωProp)
 
 # # Check revJoint axis
