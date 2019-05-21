@@ -95,52 +95,55 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     extFListCopy = deepcopy(extFList)
     for k=1:length(j)
         extFListCopy[j[k].RB1.bodyID].Forces =
-        vcat(extFListCopy[j[k].RB1.bodyID].Forces,reshape(ForceJoints[1:3,2*k-1],(1,3)))
+        vcat(extFListCopy[j[k].RB1.bodyID].Forces, reshape(ForceJoints[1:3,2*k-1],(1,3)))
         extFListCopy[j[k].RB1.bodyID].Positions =
-        vcat(extFListCopy[j[k].RB1.bodyID].Positions,reshape(j[k].pos1,(1,3)))
+        vcat(extFListCopy[j[k].RB1.bodyID].Positions, reshape(j[k].pos1,(1,3)))
         extFListCopy[j[k].RB1.bodyID].Torques =
-        vcat(extFListCopy[j[k].RB1.bodyID].Torques,reshape(ForceJoints[4:6,2*k-1],(1,3)))
+        vcat(extFListCopy[j[k].RB1.bodyID].Torques, reshape(ForceJoints[4:6,2*k-1],(1,3)))
 
         extFListCopy[j[k].RB2.bodyID].Forces =
-        vcat(extFListCopy[j[k].RB2.bodyID].Forces,reshape(ForceJoints[1:3,2*k],(1,3)))
+        vcat(extFListCopy[j[k].RB2.bodyID].Forces, reshape(ForceJoints[1:3,2*k],(1,3)))
         extFListCopy[j[k].RB2.bodyID].Positions =
-        vcat(extFListCopy[j[k].RB2.bodyID].Positions,reshape(j[k].pos2,(1,3)))
+        vcat(extFListCopy[j[k].RB2.bodyID].Positions, reshape(j[k].pos2,(1,3)))
         extFListCopy[j[k].RB2.bodyID].Torques =
-        vcat(extFListCopy[j[k].RB2.bodyID].Torques,reshape(ForceJoints[4:6,2*k],(1,3)))
+        vcat(extFListCopy[j[k].RB2.bodyID].Torques, reshape(ForceJoints[4:6,2*k],(1,3)))
     end
-    # Generate constraint Forces for each body using UK Formulation
-    ForceConstr = zeros(7,length(j)+1)
-    ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],
-                       ForceConstr[:,1],ForceConstr[:,2],GravityInInertial)
-    if length(j) > 1
-        for k = 2:length(j)
-            FcAug = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-            extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-            ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)
 
-            ForceConstr[:,j[k].RB1.bodyID] =
-            ForceConstr[:,j[k].RB1.bodyID] + FcAug[1:7]
-            # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-            # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-            # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[1:7]
+    ForceConstr = Constraint(j,extFListCopy,GravityInInertial)
 
-            ForceConstr[:,j[k].RB2.bodyID] =
-            ForceConstr[:,j[k].RB2.bodyID] + FcAug[8:14]
-            # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-            # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-            # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[8:14]
-
-            # if k==3
-            #     # a = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],extFListCopy[j[k].RB2.bodyID],GravityInInertial)[1:7]
-            #     @show a
-            #     # @show ForceConstr[:,3]
-            # end
-            # if k==2
-            #     # @show extFListCopy[3]
-            #     @show ForceConstr[:,3]
-            # end
-        end
-    end
+    ## Generate constraint Forces for each body using UK Formulation
+    # ForceConstr = zeros(7,length(j)+1)
+    # ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],
+    #                    ForceConstr[:,1],ForceConstr[:,2],GravityInInertial)
+    # if length(j) > 1
+    #     for k = 2:length(j)
+    #         FcAug = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
+    #         extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
+    #         ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)
+    #
+    #         ForceConstr[:,j[k].RB1.bodyID] =
+    #         ForceConstr[:,j[k].RB1.bodyID] + FcAug[1:7]
+    #         # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
+    #         # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
+    #         # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[1:7]
+    #
+    #         ForceConstr[:,j[k].RB2.bodyID] =
+    #         ForceConstr[:,j[k].RB2.bodyID] + FcAug[8:14]
+    #         # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
+    #         # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
+    #         # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[8:14]
+    #
+    #         # if k==3
+    #         #     # a = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],extFListCopy[j[k].RB2.bodyID],GravityInInertial)[1:7]
+    #         #     @show a
+    #         #     # @show ForceConstr[:,3]
+    #         # end
+    #         # if k==2
+    #         #     # @show extFListCopy[3]
+    #         #     @show ForceConstr[:,3]
+    #         # end
+    #     end
+    # end
 
     dX = mainDyn(X,j,extFListCopy,ForceConstr, GravityInInertial)
     return dX
