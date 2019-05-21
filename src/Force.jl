@@ -8,6 +8,23 @@ using LinearAlgebra
 using ForwardDiff
 using Revise
 
+function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
+
+    for i = 1:length(j)
+        # Call corresponding joint function to get A, b, F.
+    end
+
+    # Assemble M, A, b, F.
+
+    # Call ConstraintForceTorque with assembled matrices.
+
+    # Partition generated ForceConstr for each rigid body.
+
+    # Return ForceConstr.
+
+end
+
+
 function ForceCon(j::Joint,extF1::extForces,extF2::extForces,
     Fc1::Vector{Float64},Fc2::Vector{Float64},
     GravityInInertial::Vector{Float64})::Vector{Float64}
@@ -45,6 +62,7 @@ function ForceCon(j::Joint,extF1::extForces,extF2::extForces,
     end
     return Fc
 end
+
 # For inertial frame and body
 function ForceFree(j::Joint,extF::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated due to quaternion constraint

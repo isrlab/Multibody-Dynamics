@@ -140,7 +140,6 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
             #     @show ForceConstr[:,3]
             # end
         end
-        # @show ForceConstr[:,3]
     end
 
     dX = mainDyn(X,j,extFListCopy,ForceConstr, GravityInInertial)
