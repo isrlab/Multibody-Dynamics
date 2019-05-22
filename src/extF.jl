@@ -6,11 +6,13 @@ include("OrientationConversion.jl")
 function extF(t::Float64,j::Joint...)
     # Function to generate external forces
     # that may or may not be functions of time
-    extFList = Vector{extForces}(undef,length(j)+1)
-    extFList[1] = zeroExtForce() # First body always the inertial frame
+    extFList = zeroExtForceVec(length(j)+1)
+
+    # First body always the inertial frame
+    # extFList[1] = zeroExtForce()
 
     # Pendulum Test
-    extFList[2] = zeroExtForce()
+    # extFList[2] = zeroExtForce()
 
     # Joint Test
     # extFList[2] = extForces(transpose((j[1].RB2.m)*-g),  zeros(1,3),[0.0 0.0 0.01])
@@ -25,6 +27,7 @@ function extF(t::Float64,j::Joint...)
     # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
+    # ModRob
     return extFList
 end
 
