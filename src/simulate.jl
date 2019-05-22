@@ -79,9 +79,9 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     global GravityInInertial
     extFList = extF(t,j...)
     # Update RigidBodies
-    updateRigidBody(j[1].RB1,X[1:14])
+    updateRigidBody!(j[1].RB1,X[1:14])
     for k=1:length(j)
-        updateRigidBody(j[k].RB2,X[14*k+1:14*(k+1)])
+        updateRigidBody!(j[k].RB2,X[14*k+1:14*(k+1)])
     end
     @show t
 

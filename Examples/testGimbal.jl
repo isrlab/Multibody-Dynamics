@@ -28,9 +28,9 @@ Body = RigidBody(mb,Ib,2)
 Gimbal = RigidBody(mg,Ig,3)
 
 x0Body = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
-Body = initialiseRigidBody(Body,x0Body)
+initialiseRigidBody!(Body,x0Body)
 x0Gimbal = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
-Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
+initialiseRigidBody!(Gimbal,x0Gimbal)
 
 ## Joint Descriptions
 # Joint 1 (Free) between the inertial frame and body.

@@ -31,16 +31,16 @@ Prop1 = RigidBody(mp,Ip,4)
 Prop2 = RigidBody(mp,Ip,5)
 
 x0Body = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
-Body = initialiseRigidBody(Body,x0Body)
+initialiseRigidBody!(Body,x0Body)
 
 x0Gimbal = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
-Gimbal = initialiseRigidBody(Gimbal,x0Gimbal)
+initialiseRigidBody!(Gimbal,x0Gimbal)
 
 x0Prop1 = [[0.0;0.0;0.234];[1;zeros(3)];zeros(3);zeros(4)]
-Prop1 = initialiseRigidBody(Prop1,x0Prop1)
+initialiseRigidBody!(Prop1,x0Prop1)
 
 x0Prop2 = [[0.0;0.0;0.24];[1;zeros(3)];zeros(3);zeros(4)]
-Prop2 = initialiseRigidBody(Prop2,x0Prop2)
+initialiseRigidBody!(Prop2,x0Prop2)
 
 ## Joint Descriptions
 # Joint 1 (Free) between the inertial frame and body.
@@ -58,7 +58,7 @@ axisZ = [0.0 0.0 1.0][:]
 rjGimbal2 = [0.0 0.0 0.091][:]
 rjProp1 = [0.0 0.0 0.0][:]
 j3 = Joint(Gimbal,Prop1,rjGimbal2,rjProp1,
-     type = "Revolute",axis = axisZ)#, jointTorque = [0.0 0.0 0.00][:])
+     type = "Revolute",axis = axisZ, jointTorque = [0.0 0.0 0.001][:])
 
 
 # Joint 2 (Revolute2) between the body and gimbal
@@ -66,7 +66,7 @@ axisZ = [0.0 0.0 1.0][:]
 rjGimbal3 = [0.0 0.0 0.097][:]
 rjProp2 = [0.0 0.0 0.0][:]
 j4 = Joint(Gimbal,Prop2,rjGimbal3,rjProp2,
-     type = "Revolute", axis = axisZ)#, jointTorque = [0.0 0.0 0.00][:])
+     type = "Revolute", axis = axisZ, jointTorque = [0.0 0.0 -0.001][:])
 
 
 ## Simulation

@@ -147,17 +147,17 @@ function rbDynQuat(RB::RigidBody,
 end
 
 
-function initialiseRigidBody(RB::RigidBody,x0::Vector{Float64})
+function initialiseRigidBody!(RB::RigidBody,x0::Vector{Float64})
     # Initialise rigid body with x0
     RB.x = x0
     return RB
 end
 
-function updateRigidBody(b::RigidBody,x::Vector{Float64})
+function updateRigidBody!(b::RigidBody,x::Vector{Float64})
     b.x = x
     b.dcm = quat2dcm(x[4:7])
     b.ω = angVel(x[4:7],x[11:14])
-    # return b
+    return b
 end
 
 function InertialFrameAsRB()
@@ -177,4 +177,13 @@ function zeroExtForce()
     Positions = zeros(1,3)
     Torques = zeros(1,3)
     return extF = extForces(Forces,Positions,Torques)
+end
+
+function zeroExtForceVec(l::Int64)
+    # l is the length of the vector
+    v = Vector{extForces}(undef,l)
+    for i=1:l
+        v[i] = zeroExtForce()
+    end
+    return v
 end

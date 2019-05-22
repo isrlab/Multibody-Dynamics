@@ -16,7 +16,7 @@ I1 = [m*(l^2/12 + r^2/4) 0 0; 0 m*(l^2/12 + r^2/4) 0; 0 0 m*(l^2/12 + r^2/4)]
 RbI = InertialFrameAsRB()
 R1 = RigidBody(m,I1,2)
 x0R1 = [0.0;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
-R1 = initialiseRigidBody(R1,x0R1)
+initialiseRigidBody!(R1,x0R1)
 
 axis = [0.0 0.0 1.0][:] # Axis about which bar is revolving
 
@@ -27,7 +27,6 @@ j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axis)
 
 # External Forces Definition
 g = [0.0;0.0;-9.806]
-extFList = Vector{extForces}(undef,2)
 
 # Simulation
 tEnd = 1.0

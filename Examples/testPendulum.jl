@@ -13,7 +13,7 @@ I1 = [1 0 0; 0 m*l^2/12 0; 0 0 1]
 R1 = RigidBody(m,I1,2)
 RbI = InertialFrameAsRB()
 x0R1 = [l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
-R1 = initialiseRigidBody(R1,x0R1)
+initialiseRigidBody!(R1,x0R1)
 
 axisY = [0.0 1.0 0.0][:] # Axis about which bar is revolving
 
@@ -25,7 +25,7 @@ j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axisY)
 # External Forces Definition
 g = [0.0;0.0;-9.806]
 
-# Simulation
+## Simulation
 tEnd = 1.0
 tSpan = 0.01
 tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
