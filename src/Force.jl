@@ -9,7 +9,7 @@ using ForwardDiff
 using Revise
 
 function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
-    A = Matrix{Float64}[]
+    A = Matrix{Float64}[] # To enable creating vector of matrices
     bfinal = Float64[]
     for i = 1:length(j)
         b1 = j[i].RB1.bodyID; b2 = j[i].RB2.bodyID
@@ -47,7 +47,7 @@ function assembleA(j::Tuple{Vararg{Joint}},
         nRows = nRows + size(A[i],1)
         push!(nR,nRows)
     end
-    @show nR
+
     Afinal = zeros(nRows,nCols)
     for i=1:length(j)
         if i>1
@@ -55,7 +55,7 @@ function assembleA(j::Tuple{Vararg{Joint}},
             Afinal[nR[i-1]+1:nR[i],7*(b1-1)+1:7*b1] = A[i][:,1:7]
             Afinal[nR[i-1]+1:nR[i],7*(b2-1)+1:7*b2] = A[i][:,8:14]
         else
-            # First rigid body always connected to the inertial frame. A from ForceXIn only has relevant elements in the second half columns. 
+            # First rigid body always connected to the inertial frame. A from ForceXIn only has relevant elements in the second half columns.
             Afinal[1:nR[1],1:7] = A[1][:,8:14]
         end
     end
