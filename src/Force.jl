@@ -25,11 +25,6 @@ function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, Gravit
     # Assemble F.
     Ffinal = assembleF(j,extFList,GravityInInertial)
     # Call ConstraintForceTorque with assembled matrices.
-    # f = genExtF(j[4].RB2,extFList[5],GravityInInertial);
-    # # @show Afinal[1,1:14]
-    # @show a
-    # c = Ffinal[22:28] - f
-    # @show c
     Fc = ConstraintForceTorque(Mfinal,Ffinal,Afinal,bfinal)
     # Partition generated ForceConstr for each rigid body.
     ForceConstr = zeros(7,length(j)+1)
@@ -52,6 +47,7 @@ function assembleA(j::Tuple{Vararg{Joint}},
         nRows = nRows + size(A[i],1)
         push!(nR,nRows)
     end
+    @show nR
     Afinal = zeros(nRows,nCols)
     for i=1:length(j)
         if i>1
@@ -59,13 +55,13 @@ function assembleA(j::Tuple{Vararg{Joint}},
             Afinal[nR[i-1]+1:nR[i],7*(b1-1)+1:7*b1] = A[i][:,1:7]
             Afinal[nR[i-1]+1:nR[i],7*(b2-1)+1:7*b2] = A[i][:,8:14]
         else
-            Afinal[1:nR[1],1:7] = A[1][:,1:7]
+            Afinal[1:nR[1],1:7] = A[1][:,8:14]
         end
     end
     return Afinal
 end
 
-function assembleM(j)
+function assembleM(j::Tuple{Vararg{Joint}})
     maxBodyID = j[end].RB2.bodyID
     v = collect(3:maxBodyID)
 
@@ -85,7 +81,7 @@ function assembleM(j)
     return Mfinal
 end
 
-function assembleF(j, extFList, GravityInInertial)
+function assembleF(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
     maxBodyID = j[end].RB2.bodyID
     F = Vector{Float64}(undef,7*(maxBodyID-1))
 
