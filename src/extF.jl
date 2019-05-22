@@ -9,19 +9,20 @@ function extF(t::Float64,j::Joint...)
     extFList = Vector{extForces}(undef,length(j)+1)
     extFList[1] = zeroExtForce() # First body always the inertial frame
 
+    # Pendulum Test
+    extFList[2] = zeroExtForce()
+
     # Joint Test
-    # extFList[1] = zeroExtForce()
-    # extFList[2] = extForces(transpose((j[1].RB2.m)*-g),
-    #                 zeros(1,3),[0.0 10.0 0.0])
+    # extFList[2] = extForces(transpose((j[1].RB2.m)*-g),  zeros(1,3),[0.0 0.0 0.01])
 
     # CoAxCop
-    extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.001 0.0 0.0])
-    extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    extFList[5] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    # extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
+    # extFList[5] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # Gimbal test
-    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.001 0.0 0.0])
+    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     return extFList
@@ -42,3 +43,17 @@ function genJointF(t::Float64,j::Joint)
     return (Fb1,Fb2)
 
 end
+
+
+##
+Acor = [-1.0 -0.0 -0.0 1.0 -0.0 -0.0 -0.0; -0.0 -1.0 -0.0 -0.0 -0.0 -0.0 1.0; -0.0 -0.0 -1.0 -0.0 -0.0 -1.0 -0.0; 0.0 0.0 0.0 1.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 2.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 2.0]
+Afinal = [-1.0 -0.0 -0.0 1.0 -0.0 -0.0 -0.0; -0.0 -1.0 -0.0 -0.0 -0.0 -0.0 1.0; -0.0 -0.0 -1.0 -0.0 -0.0 -1.0 -0.0; 0.0 0.0 0.0 1.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 2.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 2.0]
+Acor - Afinal
+##
+bcor = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+##
+Mcor = [1.0 0.0 0.0 0.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0 0.0 0.0 0.0; 0.0 0.0 1.0 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 0.232278 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 4.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.333333 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 4.0]
+Mfinal = [1.0 0.0 0.0 0.0 0.0 0.0 0.0; 0.0 1.0 0.0 0.0 0.0 0.0 0.0; 0.0 0.0 1.0 0.0 0.0 0.0 0.0; 0.0 0.0 0.0 2.31172 0.0 0.0 0.0; 0.0 0.0 0.0 0.0 4.0 0.0 0.0; 0.0 0.0 0.0 0.0 0.0 0.333333 0.0; 0.0 0.0 0.0 0.0 0.0 0.0 4.0]
+Mcor - Mfinal
+##
+Fcor = [0.0, 0.0, -9.806, 0.0, 0.0, 0.0, 0.0]
