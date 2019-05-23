@@ -357,10 +357,10 @@ function ForceConWeldAll(j::Joint)#, extF1::extForces, extF2::extForces, Fc1::Ve
     b2 = j.RB2
 
     # Weld Joint has 8/9 constraints
-    A = zeros(9,14); b = zeros(9);
+    A = zeros(8,14); b = zeros(8);
     A[1:3,:] = TranslationConstraint(j)[1]; b[1:3] = TranslationConstraint(j)[2]
     A[4:5,:] = QuatNormConstraint(j)[1]; b[4:5] = QuatNormConstraint(j)[2]
-    A[6:9,:] = WeldJointAllConstraint(j)[1]; b[6:9] = WeldJointAllConstraint(j)[2]
+    A[6:end,:] = WeldJointAllConstraint(j)[1]; b[6:end] = WeldJointAllConstraint(j)[2]
 
     # M1 = genMatM(b1)
     # M2 = genMatM(b2)
@@ -886,52 +886,80 @@ function RevJoint2ConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <: R
 
 end
 
-
 function WeldJointAllConstraint(j::Joint)::Tuple
+    # Attempting relative angular ω between bodies in body 1 frame is zero
     b1 = j.RB1
     b2 = j.RB2
-
-    A = zeros(4,14)
-    b = zeros(4)
-    y = WeldJointAllConstraintSupplement(b1.x,b2.x)
-    A[:,4:7] = y[1][1]
-    A[:,11:14] = y[1][2]
-    b = y[2]
-    return (A,b)
-end
-
-function WeldJointAllConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <: Real
+    β1 = b1.x[4:7]
+    β2 = b2.x[4:7]
+    β1dot = b1.x[11:14]
+    β2dot = b2.x[11:14]
+    axis = j.axis
+    βaug = [β1;β1dot;β2;β2dot]
     function f(y::Vector{T}) where T <: Real
-        # Computes the Hamilton product of β2 and β1^-1 (i.e. β2*()β1^-1))
-        y1 = [y[1];-y[2:4]]
-        y2 = y[5:8]
-        x = [y2[1]*y1[1] - transpose(y2[2:4])*y1[2:4];
-             y2[1]*y1[2:4] + y1[1]*y2[2:4] + cross(y2[2:4],y1[2:4])]
-        return x
+        y1  = y[1:4]; y1dot = y[5:8]#β1
+        y2 = y[9:12]; y2dot = y[13:16] #β2;β2dot
+        ωb2 = angVel(y2,y2dot)
+        ωb1 = angVel(y1,y1dot)
+        ωb2inb1 = quat2dcm(y1)*transpose(quat2dcm(y2))*ωb2
+        relAngVel = ωb2inb1 - ωb1
+        return relAngVel
     end
     fJac = z->ForwardDiff.jacobian(f,z)
-    fdotJac = z->ForwardDiff.jacobian(fJac,z)
 
-    β1 = x1[4:7]
-    β2 = x2[4:7]
-    β1dot = x1[11:14]
-    β2dot = x2[11:14]
-    β = [β1;β2]
+    Ax = zeros(3,14); bx = zeros(3)
+    Ax[:,4:7] = fJac(βaug)[:,5:8]
+    Ax[:,11:14] = fJac(βaug)[:,13:16]
+    bx = -fJac(βaug)[:,1:4]*β1dot - fJac(βaug)[:,9:12]*β2dot
 
-    y1 = f(β)
-    y2 = fJac(β)
-    y3 = fdotJac(β)
-    y3r = reshape(y3,(4,8,8))
-    x1 = y3[1:16,1:4]*β1dot; x1 = reshape(x1,(4,4))
-    x2 = y3[1:16,5:8]*β2dot; x2 = reshape(x2,(4,4))
-    x3 = y3[17:end,1:4]*β1dot; x3 = reshape(x3,(4,4))
-    x4 = y3[17:end,5:8]*β2dot; x4 = reshape(x4,(4,4))
-    # β = rand(8); β1dot = rand(4); β2dot = rand(4);
-    LHS = (-fJac(β)[:,1:4],-fJac(β)[:,5:8])
-    RHS = (x1+x2)*β1dot + (x3+x4)*β2dot
-    return (LHS,RHS)
-
+    return (Ax,bx)
 end
+
+# function WeldJointAllConstraint(j::Joint)::Tuple
+#     b1 = j.RB1
+#     b2 = j.RB2
+#
+#     A = zeros(4,14)
+#     b = zeros(4)
+#     y = WeldJointAllConstraintSupplement(b1.x,b2.x)
+#     A[:,4:7] = y[1][1]
+#     A[:,11:14] = y[1][2]
+#     b = y[2]
+#     return (A,b)
+# end
+
+# function WeldJointAllConstraintSupplement(x1::Vector{T}, x2::Vector{T}) where T <: Real
+#     function f(y::Vector{T}) where T <: Real
+#         # Computes the Hamilton product of β2 and β1^-1 (i.e. β2*()β1^-1))
+#         y1 = [y[1];-y[2:4]]
+#         y2 = y[5:8]
+#         x = [y2[1]*y1[1] - transpose(y2[2:4])*y1[2:4];
+#              y2[1]*y1[2:4] + y1[1]*y2[2:4] + cross(y2[2:4],y1[2:4])]
+#         return x
+#     end
+#     fJac = z->ForwardDiff.jacobian(f,z)
+#     fdotJac = z->ForwardDiff.jacobian(fJac,z)
+#
+#     β1 = x1[4:7]
+#     β2 = x2[4:7]
+#     β1dot = x1[11:14]
+#     β2dot = x2[11:14]
+#     β = [β1;β2]
+#
+#     y1 = f(β)
+#     y2 = fJac(β)
+#     y3 = fdotJac(β)
+#     y3r = reshape(y3,(4,8,8))
+#     x1 = y3[1:16,1:4]*β1dot; x1 = reshape(x1,(4,4))
+#     x2 = y3[1:16,5:8]*β2dot; x2 = reshape(x2,(4,4))
+#     x3 = y3[17:end,1:4]*β1dot; x3 = reshape(x3,(4,4))
+#     x4 = y3[17:end,5:8]*β2dot; x4 = reshape(x4,(4,4))
+#     # β = rand(8); β1dot = rand(4); β2dot = rand(4);
+#     LHS = (-fJac(β)[:,1:4],-fJac(β)[:,5:8])
+#     RHS = (x1+x2)*β1dot + (x3+x4)*β2dot
+#     return (LHS,RHS)
+# end
+
 function ConstraintForceTorque(M::Matrix{Float64},F::Vector{Float64},A::Matrix{Float64},b::Vector{Float64})::Vector{Float64}
     # @show A
     # @show b
