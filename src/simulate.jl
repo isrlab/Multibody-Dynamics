@@ -170,9 +170,7 @@ function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
     dQ[1:14] = zeros(14)
     for k=1:length(j)
         # rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
-        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2,unconstrF[:,j[k].RB2.bodyID],
-                              ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)
-
+        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID], GravityInInertial)                
     end
     return dQ
 end
