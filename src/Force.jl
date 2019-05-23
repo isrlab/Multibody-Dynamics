@@ -32,8 +32,14 @@ function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, Gravit
         k = j[i].RB2.bodyID
         ForceConstr[:,k] = Fc[7*(k-2)+1:7*(k-1)]
     end
-    # Return ForceConstr.
-    return ForceConstr
+    # Partition generated Ffinal (unconstrainedF) for each rigid body.
+    unconstrF = zeros(7,length(j)+1)
+    for i=1:length(j)
+        k = j[i].RB2.bodyID
+        unconstrF[:,k] = Ffinal[7*(k-2)+1:7*(k-1)]
+    end
+    # Return unconstrF, ForceConstr.
+    return (unconstrF,ForceConstr)
 end
 
 function assembleA(j::Tuple{Vararg{Joint}},

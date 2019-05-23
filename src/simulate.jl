@@ -109,7 +109,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
         vcat(extFListCopy[j[k].RB2.bodyID].Torques, reshape(ForceJoints[4:6,2*k],(1,3)))
     end
 
-    ForceConstr = Constraint(j,extFListCopy,GravityInInertial)
+    unconstrF, ForceConstr = Constraint(j,extFListCopy,GravityInInertial)
 
     ## Generate constraint Forces for each body using UK Formulation
     # ForceConstr = zeros(7,length(j)+1)
@@ -145,7 +145,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     #     end
     # end
 
-    dX = mainDyn(X,j,extFListCopy,ForceConstr, GravityInInertial)
+    dX = mainDyn(X,j,unconstrF,ForceConstr, GravityInInertial)
     return dX
 end
 
@@ -161,7 +161,7 @@ Main function for solving the ODE. \\
 Output: dQ = f(Q,t).
 """
 function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
-    extFList::Vector{extForces}, ForceConstr::Matrix{Float64},
+    unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64},
     GravityInInertial::Vector{Float64})
 
     dQ = Vector{Float64}(undef,(length(j)+1)*14)
@@ -170,7 +170,7 @@ function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
     dQ[1:14] = zeros(14)
     for k=1:length(j)
         # rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
-        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2,extFList[j[k].RB2.bodyID],
+        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2,unconstrF[:,j[k].RB2.bodyID],
                               ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)
 
     end
