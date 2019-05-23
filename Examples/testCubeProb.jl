@@ -17,33 +17,29 @@ Ip =    [ 0.0029    0.0000    0.0000;
           0.0000    0.0000    0.5805]*(10^-4)
 
 InFrame = InertialFrameAsRB()
-QuadCube = RigidBody(mb,Ib,"quaternions")
-Props = RigidBody(mp,Ip,"quaternions")
+QuadCube = RigidBody(mb,Ib,2)
+Props = RigidBody(mp,Ip,3)
 
 x0Cube = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
-QuadCube = initialiseRigidBody(QuadCube,x0Cube)
+initialiseRigidBody!(QuadCube,x0Cube)
 x0Props = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
-Props = initialiseRigidBody(Props,x0Props)
+initialiseRigidBody!(Props,x0Props)
 
 axis = [0.0 0.0 1.0][:]
 rjCube = [0.0 0.0 0.143][:]
 rjProp = [0.0 0.0 0.0][:]
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
-j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Revolute",axis = axis,jointTorque = [0.0;0.0;0.0001])
+j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Weld",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
 
 # External Forces Definition
 g = [0.0;0.0;0.0]
-extFList = Vector{extForces}(undef,3)
-extFList[1] = zeroExtForce()
-extFList[2] = extForces(transpose((j1.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
-extFList[3] = extForces(transpose((j2.RB2.m)*-g),zeros(1,3),[0.0 0.0 0.0])
 
 # Simulation
 tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g,extFVec = extFList)
+tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)
 
 solQuad = solFinal[1]
 solProp = solFinal[2]
@@ -55,18 +51,20 @@ jointLoc = Matrix{Float64}(undef,length(tSim),3)
 ωCube = Matrix{Float64}(undef,length(tSim),3)
 ωProp = Matrix{Float64}(undef,length(tSim),3)
 ωPropInCube = Matrix{Float64}(undef,length(tSim),3)
+ωRel = Matrix{Float64}(undef,length(tSim),3)
 for i=1:length(tSim)
     QuadCube.dcm = quat2dcm(solQuad.β[i,:])
     ωCube[i,:] = angVel(solQuad.β[i,:],solQuad.βdot[i,:])
     ωProp[i,:] = angVel(solProp.β[i,:],solProp.βdot[i,:])
     ωPropInCube[i,:] = quat2dcm(solQuad.β[i,:])*transpose(quat2dcm(solProp.β[i,:]))*ωProp[i,:]
+    ωRel[i,:] = ωPropInCube[i,:] - ωCube[i,:]
     jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
 end
 plotPos(tSim,jointLoc)
 plotVel(tSim,solQuad.v - solProp.v)
 plotAngVel(tSim,ωCube)
 plotAngVel(tSim,ωProp)
-plotAngVel(tSim,ωPropInCube)
+# plotAngVel(tSim,ωRel)
 # plotAngVel(tSim,ωCube - ωProp)
 
 # # Check revJoint axis
