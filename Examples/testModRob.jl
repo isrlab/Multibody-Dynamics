@@ -120,10 +120,10 @@ j9 = Joint(Gimbal2, Prop22, rjGimbal3, rjProp2, type = "Revolute", jointTorque =
 ## Simulation
 tEnd = 0.1
 tSpan = 0.01
-g = [0.0;0.0;0.0]
+g = [0.0;0.0;0.0] # Gravity Vector.
 j = (j1,j2,j3,j4,j5,j6,j7,j8,j9) # Tuple of joints
 tSim, solFinal = simulate(tEnd,tSpan,j...,g=g)
-
+# @time simulate(tEnd,tSpan,j...,g=g)
 ## Assigning solutions
 solBody1 = solFinal[1]
 solGimbal1 = solFinal[2]
@@ -169,7 +169,7 @@ for i=1:length(tSim)
     Gimbal1.dcm = quat2dcm(solGimbal1.β[i,:])
     Prop11.dcm = quat2dcm(solProp11.β[i,:])
     Prop12.dcm = quat2dcm(solProp12.β[i,:])
-
+    Box.dcm = quat2dcm(solBox.β[i,:])
     ωBody1[i,:] = angVel(solBody.β[i,:],solBody.βdot[i,:])
     ωGimbal1[i,:] = angVel(solGimbal1.β[i,:],solGimbal1.βdot[i,:])
     ωProp11[i,:] = angVel(solProp11.β[i,:],solProp11.βdot[i,:])
@@ -186,17 +186,19 @@ for i=1:length(tSim)
                  transpose(quat2dcm(solProp2.β[i,:]))*
                  ωProp2[i,:] - ωGimbal[i,:]
 
-    jointLoc2[i,:] = solBody1.r[i,:] + transpose(Body1.dcm)*rjBody  -                    solGimbal.r[i,:] -                     transpose(Gimbal1.dcm)*rjGimbal1
-    jointLoc3[i,:] = solGimbal.r[i,:] + transpose(Gimbal1.dcm)*rjGimbal2 - solProp1.r[i,:] - transpose(Prop11.dcm)*rjProp1
-    jointLoc4[i,:] = solGimbal.r[i,:] +
+    jointLoc2[i,:] = solBody1.r[i,:] + transpose(Body1.dcm)*rjBody  -                    solGimbal1.r[i,:] -                     transpose(Gimbal1.dcm)*rjGimbal1
+    jointLoc3[i,:] = solGimbal.r[i,:] + transpose(Gimbal1.dcm)*rjGimbal2 - solProp11.r[i,:] - transpose(Prop11.dcm)*rjProp1
+    jointLoc4[i,:] = solGimbal1.r[i,:] +
                      transpose(Gimbal1.dcm)*rjGimbal3 -
-                     solProp2.r[i,:] - transpose(Prop12.dcm)*rjProp2
+                     solProp12.r[i,:] - transpose(Prop12.dcm)*rjProp2
+    jointLoc5[i,:] = solBody1.r[i,:] + transpose(Body1.dcm)*rjCac1 - solBox.r[i,:] - transpose(Box.dcm)*rjBox1
 end
 for i=1:length(tSim)
      Body2.dcm = quat2dcm(solBody2.β[i,:])
      Gimbal2.dcm = quat2dcm(solGimbal2.β[i,:])
      Prop21.dcm = quat2dcm(solProp21.β[i,:])
      Prop22.dcm = quat2dcm(solProp22.β[i,:])
+     Box.dcm = quat2dcm(solBox.β[i,:])
 
      ωBody2[i,:] = angVel(solBody.β[i,:],solBody.βdot[i,:])
      ωGimbal2[i,:] = angVel(solGimbal2.β[i,:],solGimbal2.βdot[i,:])
@@ -214,11 +216,12 @@ for i=1:length(tSim)
                   transpose(quat2dcm(solProp2.β[i,:]))*
                   ωProp2[i,:] - ωGimbal[i,:]
 
-     jointLoc7[i,:] = solBody2.r[i,:] + transpose(Body2.dcm)*rjBody  -                    solGimbal.r[i,:] -                     transpose(Gimbal2.dcm)*rjGimbal2
-     jointLoc8[i,:] = solGimbal.r[i,:] + transpose(Gimbal2.dcm)*rjGimbal2 - solProp1.r[i,:] - transpose(Prop21.dcm)*rjProp1
-     jointLoc9[i,:] = solGimbal.r[i,:] +
+     jointLoc7[i,:] = solBody2.r[i,:] + transpose(Body2.dcm)*rjBody  -                    solGimbal2.r[i,:] -                     transpose(Gimbal2.dcm)*rjGimbal1
+     jointLoc8[i,:] = solGimbal2.r[i,:] + transpose(Gimbal2.dcm)*rjGimbal2 - solProp21.r[i,:] - transpose(Prop21.dcm)*rjProp1
+     jointLoc9[i,:] = solGimbal2.r[i,:] +
                       transpose(Gimbal2.dcm)*rjGimbal3 -
-                      solProp2.r[i,:] - transpose(Prop22.dcm)*rjProp2
+                      solProp22.r[i,:] - transpose(Prop22.dcm)*rjProp2
+     jointLoc6[i,:] = solBody2.r[i,:] + transpose(Body2.dcm)*rjCac2 - solBox.r[i,:] - transpose(Box.dcm)*rjBox2
 end
 
 ## Plotting
@@ -226,6 +229,8 @@ end
 plotPos(tSim,jointLoc2)
 plotPos(tSim,jointLoc3)
 plotPos(tSim,jointLoc4)
+plotPos(tSim,jointLoc5)
+plotPos(tSim,jointLoc6)
 plotPos(tSim,jointLoc7)
 plotPos(tSim,jointLoc8)
 plotPos(tSim,jointLoc9)
