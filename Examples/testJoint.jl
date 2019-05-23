@@ -26,7 +26,7 @@ rj2 = [0 0.0 0.0][:] # Joint location in body frame of second body
 j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axis)
 
 # External Forces Definition
-g = [0.0;0.0;-9.806]
+g = [0.0;0.0;0.0]
 
 # Simulation
 tEnd = 1.0

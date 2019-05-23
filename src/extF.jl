@@ -15,7 +15,10 @@ function extF(t::Float64,j::Joint...)
     # extFList[2] = zeroExtForce()
 
     # Joint Test
-    # extFList[2] = extForces(transpose((j[1].RB2.m)*-g),  zeros(1,3),[0.0 0.0 0.01])
+    # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.01])
+
+    # Cube Prop Test
+    # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.001])
 
     # CoAxCop
     # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
@@ -28,6 +31,7 @@ function extF(t::Float64,j::Joint...)
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # ModRob
+    # extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.001])
     return extFList
 end
 

@@ -48,7 +48,7 @@ tEnd = 1.0
 tSpan = 0.01
 g = [0.0;0.0;0.0]
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)#,extFVec = extFList)
-
+@time simulate(tEnd,tSpan,j1,j2,g=g)
 solBody = solFinal[1]
 solGimbal = solFinal[2]
 
