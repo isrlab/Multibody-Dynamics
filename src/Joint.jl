@@ -27,7 +27,7 @@ mutable struct Joint
 
     function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64},
         rj2::Vector{Float64}; type::String="Free",
-        axis::Vector{Float64}=zeros(3), k::Float64=0.0, rL::Float64=0.0,
+        axis::Vector{Float64}=[0.0;0.0;1.0], k::Float64=0.0, rL::Float64=0.0,
         jointForce::Vector{Float64} = zeros(3), jointTorque::Vector{Float64} = zeros(3))
         # Default values for type, axis, k, and restLen provided.
         allowedTypes = ["Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"]
