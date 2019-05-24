@@ -104,11 +104,8 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
 
     # States are: 14 states
     # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]
-    # Forces in ForceList are decribed in body reference, ForceList is nFx3.
-    # PositionList are positions where forces are acting relative to cm,
-    # decribed in body reference, PositionList is nFx3.
-    # Torques in TorqueList are in body reference. TorqueList is matrix nTx3
-    # Inertia is a data structure: Inertia.I and Inertia.invI.
+    # unconstrainedF is a 7x1 vector, unique to each rigid body.
+    # Fc is the force generated from constraints acting on the rigid body. Unique to each body. 7x1 vector.
 
     xdot = Vector{Float64}(undef,14)
 
@@ -131,10 +128,6 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
     # unconstrainedF = genExtF(RB,extF,GravityInInertial)
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
-    # @show extF.Forces
-    # @show unconstrainedF[1:3]
-    # @show TotalForce
-    # @show TotalMoment
 
     # Udwadia's formulation using 14 States
     E = genE(β)
