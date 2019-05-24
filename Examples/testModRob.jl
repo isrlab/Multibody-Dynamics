@@ -78,12 +78,12 @@ rjGimbal1 = [0.0 0.0 -0.009][:]
 j2 = Joint(Body1,Gimbal1,rjBody,rjGimbal1,
      type = "Revolute",jointTorque = [0.0 0.0 0.001][:])
 
-# Joint 3 (Revolute) between the body and gimbal
+# Joint 3 (Revolute) between the gimbal and prop11
 rjGimbal2 = [0.0 0.0 0.091][:]
 rjProp1 = [0.0 0.0 0.0][:]
-j3 = Joint(Gimbal1, Prop11, rjGimbal2, rjProp1, type = "Revolute",jointTorque = [0.0 0.0 0.0][:])
+j3 = Joint(Gimbal1, Prop11, rjGimbal2, rjProp1, type = "Revolute",jointTorque = [0.0 0.0 -0.001][:])
 
-# Joint 4 (Revolute) between the body and gimbal
+# Joint 4 (Revolute) between the gimbal and prop12
 rjGimbal3 = [0.0 0.0 0.0965][:]
 rjProp2 = [0.0 0.0 0.0][:]
 j4 = Joint(Gimbal1, Prop12, rjGimbal3, rjProp2, type = "Revolute")#, jointTorque = [0.0 0.0 0.0][:])
@@ -106,15 +106,15 @@ rjGimbal1 = [0.0 0.0 -0.009][:]
 j7 = Joint(Body2,Gimbal2,rjBody,rjGimbal1,
      type = "Revolute")#,jointTorque = [0.0 0.0 0.0][:])
 
-# Joint 8 (Revolute) between the body and gimbal
+# Joint 8 (Revolute) between the gimbal and prop21
 rjGimbal2 = [0.0 0.0 0.091][:]
 rjProp1 = [0.0 0.0 0.0][:]
-j8 = Joint(Gimbal2, Prop21, rjGimbal2, rjProp1, type = "Revolute",jointTorque = [0.0 0.0 0.0][:])
+j8 = Joint(Gimbal2, Prop21, rjGimbal2, rjProp1, type = "Revolute",jointTorque = [0.0 0.0 0.001][:])
 
-# Joint 9 (Revolute) between the body and gimbal
+# Joint 9 (Revolute) between the gimbal and prop22
 rjGimbal3 = [0.0 0.0 0.0965][:]
 rjProp2 = [0.0 0.0 0.0][:]
-j9 = Joint(Gimbal2, Prop22, rjGimbal3, rjProp2, type = "Revolute")#, jointTorque = [0.0 0.0 0.0][:])
+j9 = Joint(Gimbal2, Prop22, rjGimbal3, rjProp2, type = "Revolute", jointTorque = [0.0 0.0 -0.001][:])
 
 
 ## Simulation
@@ -137,13 +137,13 @@ solProp22 = solFinal[9]
 
 ## Plotting
 jointLoc2 = Matrix{Float64}(undef,length(tSim),3)
-jointLoc3 = deepcopy(jointLoc2)
-jointLoc4 = deepcopy(jointLoc2)
-jointLoc5 = deepcopy(jointLoc2)
-jointLoc6 = deepcopy(jointLoc2)
-jointLoc7 = deepcopy(jointLoc2)
-jointLoc8 = deepcopy(jointLoc2)
-jointLoc9 = deepcopy(jointLoc2)
+jointLoc3 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc4 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc5 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc6 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc7 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc8 = Matrix{Float64}(undef,length(tSim),3)
+jointLoc9 = Matrix{Float64}(undef,length(tSim),3)
 
 ωBody1 = Matrix{Float64}(undef,length(tSim),3)
 ωGimbal1 = Matrix{Float64}(undef,length(tSim),3)
@@ -171,7 +171,7 @@ for i=1:length(tSim)
     Prop12.dcm = quat2dcm(solProp12.β[i,:])
     Box.dcm = quat2dcm(solBox.β[i,:])
 
-    ωBox[i,:] = angVel(solBox.β[i,:],solBox.β[i,:])
+    ωBox[i,:] = angVel(solBox.β[i,:],solBox.βdot[i,:])
     ωBody1[i,:] = angVel(solBody1.β[i,:],solBody1.βdot[i,:])
     ωGimbal1[i,:] = angVel(solGimbal1.β[i,:],solGimbal1.βdot[i,:])
     ωProp11[i,:] = angVel(solProp11.β[i,:],solProp11.βdot[i,:])
