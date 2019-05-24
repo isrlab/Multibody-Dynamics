@@ -120,7 +120,7 @@ j9 = Joint(Gimbal2, Prop22, rjGimbal3, rjProp2, type = "Revolute", jointTorque =
 ## Simulation
 tEnd = 0.1
 tSpan = 0.01
-g = [0.0;0.0;0.0] # Gravity Vector.
+g = MVector{3}([0.0,0.0,0.0]) # Gravity Vector.
 j = (j1,j2,j3,j4,j5,j6,j7,j8,j9) # Tuple of joints
 tSim, solFinal = simulate(tEnd,tSpan,j...,g=g)
 # @time simulate(tEnd,tSpan,j...,g=g)
@@ -265,3 +265,4 @@ plotAngVel(tSim,ωRel5)
 plotAngVel(tSim,ωRel6)
 # plotAngVel(tSim,ωGimbalInBody)
 # plotAngVel(tSim,ωCube - ωProp)
+# save("ModRob10Sec.jld","rMin",rSol,"ωMin", ωSol,"vMin",vSol)

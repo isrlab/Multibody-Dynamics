@@ -12,8 +12,9 @@ include("extF.jl")
 using LinearAlgebra
 using Revise
 using DifferentialEquations
+using StaticArrays
 
-global GravityInInertial = Vector{Float64}(undef,3)
+global GravityInInertial = MVector{3}([0.0,0.0,-9.806])
 # global extFList = Vector{extForces}(undef,2)
 
 struct solSim
@@ -38,7 +39,7 @@ Tsit5() solver used. \\
 Returns a tuple containing tSim and vector of solutions in solSim form.
 """
 function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
-                  g::Vector{Float64}=[0.0;0.0;-9.806])#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
+                  g::MArray{Tuple{3},Float64,1,3}=[0.0;0.0;-9.806])#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
     global GravityInInertial = g
@@ -161,8 +162,7 @@ Main function for solving the ODE. \\
 Output: dQ = f(Q,t).
 """
 function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
-    unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64},
-    GravityInInertial::Vector{Float64})
+    unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64})
 
     dQ = Vector{Float64}(undef,(length(j)+1)*14)
 
@@ -170,7 +170,7 @@ function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
     dQ[1:14] = zeros(14)
     for k=1:length(j)
         # rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
-        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID], GravityInInertial)                
+        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID])
     end
     return dQ
 end

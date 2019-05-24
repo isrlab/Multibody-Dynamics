@@ -50,3 +50,15 @@ function genJointF(t::Float64,j::Joint)
     return (Fb1,Fb2)
 
 end
+
+##
+using StaticArrays
+v1 = MVector{3}([1,2,3])
+v1[1] = 4
+v1
+typeof(v1)
+v2 = @SVector zeros(2)
+# @time v3 = v1+v2
+# v3[1] === 7
+v = MVector{3,solSim}
+v[1]=solBody1

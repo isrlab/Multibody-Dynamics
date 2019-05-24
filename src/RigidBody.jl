@@ -100,7 +100,7 @@ end
 #     xdot[10:12] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
 # end
 
-function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64}, GravityInInertial::Vector{Float64})
+function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64})
 
     # States are: 14 states
     # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]

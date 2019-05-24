@@ -8,7 +8,7 @@ using LinearAlgebra
 using ForwardDiff
 using Revise
 
-function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
+function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Float64,1,3})
     A = Matrix{Float64}[] # To enable creating vector of matrices
     bfinal = Float64[]
     for i = 1:length(j)
@@ -88,7 +88,7 @@ function assembleM(j::Tuple{Vararg{Joint}})
     return Mfinal
 end
 
-function assembleF(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::Vector{Float64})
+function assembleF(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Float64,1,3})
     maxBodyID = j[end].RB2.bodyID
     F = Vector{Float64}(undef,7*(maxBodyID-1))
 
@@ -986,7 +986,7 @@ function genMatM(b::RigidBody)::Matrix{Float64}
                          zeros(4,3) 4*transpose(E)*J*E]
 end
 
-function genExtF(b::RigidBody,extF::extForces,GravityInInertial::Vector{Float64})::Vector{Float64}
+function genExtF(b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Float64,1,3})::Vector{Float64}
     # Function to generate augmented external Force vector for unconstrained system
     # External Forces are always in the body frame
     β = b.x[4:7]
