@@ -146,7 +146,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     #     end
     # end
 
-    dX = mainDyn(X,j,unconstrF,ForceConstr, GravityInInertial)
+    dX = mainDyn(X,j,unconstrF,ForceConstr)
     return dX
 end
 

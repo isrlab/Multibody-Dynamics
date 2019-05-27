@@ -7,6 +7,7 @@
 using LinearAlgebra
 using ForwardDiff
 using Revise
+using StaticArrays
 
 function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Float64,1,3})
     A = Matrix{Float64}[] # To enable creating vector of matrices
@@ -136,7 +137,6 @@ function ForceCon(j::Joint)
     return A,b
 end
 
-
 # function ForceCon(j::Joint,extF1::extForces,extF2::extForces,
 #     Fc1::Vector{Float64},Fc2::Vector{Float64},
 #     GravityInInertial::Vector{Float64})::Vector{Float64}
@@ -180,18 +180,16 @@ function ForceFree(j::Joint)#,extF::extForces, GravityInInertial::Vector{Float64
     # Constraint Force generated due to quaternion constraint
     b2 = j.RB2
 
-
     # Revolute Joint has 7 constraints
     A = zeros(1,14); b = [0.0];
     A[1,1:7] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
 
+    return (A,b)
     # M = genMatM(b2)
 #
     # F = genExtF(b2,extF,GravityInInertial)
     # Fconstr = ConstraintForceTorque(M,F,A,b)
     # return Fconstr
-
-    return (A,b)
 end
 
 function ForceConRevIn(j::Joint)#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
