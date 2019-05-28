@@ -49,7 +49,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
         append!(X0,j[k].RB2.x)
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
-    prob = ODEProblem(mainDynODE,X0,(0.0,tEnd),j)
+    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
     sol = solve(prob,Tsit5(),reltol=1e-10,abstol=1e-10)
     # return sol
 
@@ -73,7 +73,7 @@ j:: Tuple of Joints. (Length not specified.) \\
 Generates the constraint forces acting on each rigid body present in the system at time t. \\
 Supplies these forces to mainDyn function.
 """
-function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
+function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Joint}}, t::Float64)
     # ODE function to be used as per DifferentialEquations covnention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -110,8 +110,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
         vcat(extFListCopy[j[k].RB2.bodyID].Torques, reshape(ForceJoints[4:6,2*k],(1,3)))
     end
 
-    unconstrF, ForceConstr = Constraint(j,extFListCopy,GravityInInertial)
-
+    unconstrF, constrF = Constraint(j, extFListCopy, GravityInInertial)
     ## Generate constraint Forces for each body using UK Formulation
     # ForceConstr = zeros(7,length(j)+1)
     # ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],
@@ -146,7 +145,8 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     #     end
     # end
 
-    dX = mainDyn(X,j,unconstrF,ForceConstr)
+    # dX = mainDyn(X,j,unconstrF,ForceConstr)
+    mainDyn!(dX, X, j, unconstrF, constrF)
     return dX
 end
 
@@ -161,15 +161,14 @@ ForceConstr:: Constraint Forces generated using U-K formulation, acting on each 
 Main function for solving the ODE. \\
 Output: dQ = f(Q,t).
 """
-function mainDyn(Q::Vector{Float64},j::Tuple{Vararg{Joint}},
-    unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64})
+function mainDyn!(dQ::Vector{Float64}, Q::Vector{Float64}, j::Tuple{Vararg{Joint}}, unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64})
 
-    dQ = Vector{Float64}(undef,(length(j)+1)*14)
+    # dQ = Vector{Float64}(undef,(length(j)+1)*14)
 
     # First body always the inertial frame
     dQ[1:14] = zeros(14)
     for k=1:length(j)
-        # rbDynQuat!(dQ[14*k+1:14*(k+1)],j[k].RB2,extFList[k+1],ForceConstr[:,k+1],GravityInInertial)
+        # rbDynQuat!(dQ[14*k+1:14*(k+1)], j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID])
         dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID])
     end
     return dQ
