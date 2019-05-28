@@ -78,7 +78,7 @@ function mainDynODE(X::Vector{Float64},j::Tuple{Vararg{Joint}},t::Float64)
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
     global GravityInInertial
-    extFList = extF(t,j...)
+    extFList = extF(t,j)
     # Update RigidBodies
     updateRigidBody!(j[1].RB1,X[1:14])
     for k=1:length(j)
