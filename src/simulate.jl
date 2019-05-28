@@ -66,25 +66,42 @@ end
 
 
 """
-mainDynODE(X,j,t) \\
+mainDynODE!(dX,X,j,t) \\
 X:: State vector of system at time t. \\
 j:: Tuple of Joints. (Length not specified.) \\
 
 Generates the constraint forces acting on each rigid body present in the system at time t. \\
-Supplies these forces to mainDyn function.
+dX = f(X,t)
 """
 function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Joint}}, t::Float64)
-    # ODE function to be used as per DifferentialEquations covnention
+    # ODE function to be used as per DifferentialEquations convention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
     global GravityInInertial
-    extFList = extF(t,j)
     # Update RigidBodies
     updateRigidBody!(j[1].RB1,X[1:14])
     for k=1:length(j)
         updateRigidBody!(j[k].RB2,X[14*k+1:14*(k+1)])
     end
     @show t
+
+    extFListCopy = externalFTotal(t,j) # Generates all the external forces explicitly specified, through joint actions or directly.
+
+    unconstrF, constrF = Constraint(j, extFListCopy, GravityInInertial)
+    # unconstrF is the matrix of the unconstrained Forces acting on the robot.
+    # constrF is the matrix of the constraint Forces acting on the system developed using UK formulation
+
+    dX[1:14] = zeros(14)
+    for k=1:length(j)
+        dX[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], constrF[:,j[k].RB2.bodyID])
+    end
+    # mainDyn!(dX, X, j, unconstrF, constrF)
+    return dX
+end
+
+function externalFTotal(t::Float64, j::Tuple{Vararg{Joint}})
+    # Returns externally applied forces in total, not including gravity. Includes Forces from joints and other explicitly specified external forces.
+    extFList = extF(t,j)
 
     # Generate forces from actuated joints on each body
     ForceJoints = Matrix{Float64}(undef,6,2*length(j))
@@ -109,67 +126,5 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
         extFListCopy[j[k].RB2.bodyID].Torques =
         vcat(extFListCopy[j[k].RB2.bodyID].Torques, reshape(ForceJoints[4:6,2*k],(1,3)))
     end
-
-    unconstrF, constrF = Constraint(j, extFListCopy, GravityInInertial)
-    ## Generate constraint Forces for each body using UK Formulation
-    # ForceConstr = zeros(7,length(j)+1)
-    # ForceConstr[:,2] = ForceCon(j[1],extFListCopy[1],extFListCopy[2],
-    #                    ForceConstr[:,1],ForceConstr[:,2],GravityInInertial)
-    # if length(j) > 1
-    #     for k = 2:length(j)
-    #         FcAug = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-    #         extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-    #         ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)
-    #
-    #         ForceConstr[:,j[k].RB1.bodyID] =
-    #         ForceConstr[:,j[k].RB1.bodyID] + FcAug[1:7]
-    #         # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-    #         # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-    #         # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[1:7]
-    #
-    #         ForceConstr[:,j[k].RB2.bodyID] =
-    #         ForceConstr[:,j[k].RB2.bodyID] + FcAug[8:14]
-    #         # ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],
-    #         # extFListCopy[j[k].RB2.bodyID],ForceConstr[:,j[k].RB1.bodyID],
-    #         # ForceConstr[:,j[k].RB2.bodyID],GravityInInertial)[8:14]
-    #
-    #         # if k==3
-    #         #     # a = ForceCon(j[k],extFListCopy[j[k].RB1.bodyID],extFListCopy[j[k].RB2.bodyID],GravityInInertial)[1:7]
-    #         #     @show a
-    #         #     # @show ForceConstr[:,3]
-    #         # end
-    #         # if k==2
-    #         #     # @show extFListCopy[3]
-    #         #     @show ForceConstr[:,3]
-    #         # end
-    #     end
-    # end
-
-    # dX = mainDyn(X,j,unconstrF,ForceConstr)
-    mainDyn!(dX, X, j, unconstrF, constrF)
-    return dX
-end
-
-"""
-mainDyn(Q,j,extFList,ForceConstr, GravityInInertial) \\
-
-Q:: State Vector at time t.\\
-j:: Tuple of Joints \\
-extFList:: Vector of extForces acting on each rigid body \\
-ForceConstr:: Constraint Forces generated using U-K formulation, acting on each rigid body.
-
-Main function for solving the ODE. \\
-Output: dQ = f(Q,t).
-"""
-function mainDyn!(dQ::Vector{Float64}, Q::Vector{Float64}, j::Tuple{Vararg{Joint}}, unconstrF::Matrix{Float64}, ForceConstr::Matrix{Float64})
-
-    # dQ = Vector{Float64}(undef,(length(j)+1)*14)
-
-    # First body always the inertial frame
-    dQ[1:14] = zeros(14)
-    for k=1:length(j)
-        # rbDynQuat!(dQ[14*k+1:14*(k+1)], j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID])
-        dQ[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], ForceConstr[:,j[k].RB2.bodyID])
-    end
-    return dQ
+    return extFListCopy
 end
