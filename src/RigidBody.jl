@@ -109,23 +109,10 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
 
     xdot = Vector{Float64}(undef,14)
 
-    xpos = RB.x[1];  # x position in inertial frame
-    ypos = RB.x[2];  # y position in inertial frame
-    h    = RB.x[3];  # z position in inertial frame
-
     u = RB.x[8:10];   # Velocities in Inertial reference frame
     β = RB.x[4:7];  # Euler parameters
     βdot = RB.x[11:14] # Euler parameter derivatives
-    RB.ω = angVel(β,βdot)
-    β0 = β[1];
-    β1 = β[2];
-    β2 = β[3];
-    β3 = β[4];
 
-    # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
-    RB.dcm = quat2dcm(β);
-
-    # unconstrainedF = genExtF(RB,extF,GravityInInertial)
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
 
