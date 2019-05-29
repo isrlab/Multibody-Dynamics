@@ -123,7 +123,7 @@ tSpan = 0.01
 const g = MVector{3}([0.0,0.0,-9.806]) # Gravity Vector.
 j = (j1,j2,j3,j4,j5,j6,j7,j8,j9) # Tuple of joints
 @time tSim, solFinal = simulate(tEnd,tSpan,j...,g=g)
-
+# @time solFinal = simulateRK45(tEnd, tSpan, j..., g=g)
 ## Assigning solutions
 solBody1 = solFinal[1]
 solGimbal1 = solFinal[2]
