@@ -100,7 +100,7 @@ end
 #     xdot[10:12] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
 # end
 
-function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64})
+function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64})::Vector{Float64}
 
     # States are: 14 states
     # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]
@@ -126,20 +126,20 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
 end
 
 
-function initialiseRigidBody!(RB::RigidBody,x0::Vector{Float64})
+function initialiseRigidBody!(RB::RigidBody,x0::Vector{Float64})::RigidBody
     # Initialise rigid body with x0
     RB.x = x0
     return RB
 end
 
-function updateRigidBody!(b::RigidBody,x::Vector{Float64})
+function updateRigidBody!(b::RigidBody,x::Vector{Float64})::RigidBody
     b.x = x
     b.dcm = quat2dcm(x[4:7])
     b.ω = angVel(x[4:7],x[11:14])
     return b
 end
 
-function InertialFrameAsRB()
+function InertialFrameAsRB()::RigidBody
     m = 0.0
     I = zeros(3,3)
 
@@ -150,7 +150,7 @@ function InertialFrameAsRB()
     return b
 end
 
-function zeroExtForce()
+function zeroExtForce()::extForces
     # External forces function to be changed later.
     Forces = zeros(1,3)
     Positions = zeros(1,3)
@@ -158,7 +158,7 @@ function zeroExtForce()
     return extF = extForces(Forces,Positions,Torques)
 end
 
-function zeroExtForceVec(l::Int64)
+function zeroExtForceVec(l::Int64)::Vector{extForces}
     # l is the length of the vector
     v = Vector{extForces}(undef,l)
     for i=1:l

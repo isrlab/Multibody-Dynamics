@@ -3,7 +3,7 @@ include("RigidBody.jl")
 include("Joint.jl")
 include("OrientationConversion.jl")
 
-function extF(t::Float64,j::Tuple{Vararg{Joint}})
+function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # Function to generate external forces
     # that may or may not be functions of time
     extFList = zeroExtForceVec(length(j)+1)
@@ -44,7 +44,7 @@ function extF(t::Float64,j::Tuple{Vararg{Joint}})
     return extFList
 end
 
-function genJointF(t::Float64,j::Joint)
+function genJointF(t::Float64,j::Joint)::Tuple{Vector{Float64}, Vector{Float64}}
     # For actuated joints.
     # j.jointF gives us the actuation force and torque applied ...
     # ... on the child link in the body frame of the parent link
@@ -60,7 +60,7 @@ function genJointF(t::Float64,j::Joint)
 
 end
 
-function genMotorF(t::Float64,j::Joint)
+function genMotorF(t::Float64,j::Joint)::Tuple{Vector{Float64}, Vector{Float64}}
     # For prop joints.
     # input PWM value from the user (to be supplied from a different function in the future)
     # lookupTable fn gives us the actuation force and torque applied

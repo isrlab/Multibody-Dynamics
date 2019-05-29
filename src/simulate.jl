@@ -1,5 +1,5 @@
 # Simulation
-# Tentatively to simulate two rigid bodies constrained by one revolute joint
+# Assuming all bodies connected in a tree by joints
 
 
 include("RigidBody.jl")
@@ -15,7 +15,6 @@ using DifferentialEquations
 using StaticArrays
 
 global GravityInInertial = MVector{3}([0.0,0.0,-9.806])
-# global extFList = Vector{extForces}(undef,2)
 
 struct solSim
     # Structure to store results of Simulation for each rigid body
@@ -51,7 +50,6 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
     sol = solve(prob,Tsit5(),reltol=1e-10,abstol=1e-10)
-    # return sol
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)
@@ -73,7 +71,7 @@ j:: Tuple of Joints. (Length not specified.) \\
 Generates the constraint forces acting on each rigid body present in the system at time t. \\
 dX = f(X,t)
 """
-function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Joint}}, t::Float64)
+function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Joint}}, t::Float64)::Vector{Float64}
     # ODE function to be used as per DifferentialEquations convention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -83,7 +81,6 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     for k=1:length(j)
         updateRigidBody!(j[k].RB2,X[14*k+1:14*(k+1)])
     end
-    @show t
 
     extFListCopy = externalFTotal(t,j) # Generates all the external forces explicitly specified, through joint actions or directly.
 
@@ -95,11 +92,10 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     for k=1:length(j)
         dX[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], constrF[:,j[k].RB2.bodyID])
     end
-    # mainDyn!(dX, X, j, unconstrF, constrF)
     return dX
 end
 
-function externalFTotal(t::Float64, j::Tuple{Vararg{Joint}})
+function externalFTotal(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # Returns externally applied forces in total, not including gravity. Includes Forces from joints and other explicitly specified external forces.
     extFList = extF(t,j)
 
