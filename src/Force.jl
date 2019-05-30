@@ -962,14 +962,15 @@ function ConstraintForceTorque(M::Matrix{Float64},F::Vector{Float64},A::Matrix{F
     # @show A
     # @show b
     # @show A*inv(M)*F
+    accUnconstr = M\F
     if !isreal(sqrt(M)) # insignificant imaginary values showing up
         # @show isreal(sqrt(M))
         # @show sqrt(M)
         M1 = real(sqrt(M))
         M2 = real(M^(-0.5))
-        Fc = M1*pinv(A*M2)*(b-A*inv(M)*F)
+        Fc = M1*pinv(A*M2)*(b-A*accUnconstr)
     else
-        Fc = sqrt(M)*pinv(A*M^(-0.5))*(b-A*inv(M)*F)
+        Fc = sqrt(M)*pinv(A*M^(-0.5))*(b-A*accUnconstr)
     end
     return Fc
     # Fc is in the inertial frame
