@@ -41,20 +41,19 @@ function simulateRK45(tEnd::Float64,tSpan::Float64,j::Joint...;
     # Using native RK implementation
     tSim, sol = rk45(tEnd,0.0,X0,j,mainDynRK,eps = 1e-6)
     nBodies = length(j) + 1
-    ntStops = Int64(length(sol)/(14*nBodies))
+    ntStops = length(tSim)
     sol = reshape(sol,(14*nBodies,ntStops))
-    @show sol
-    error("break.")
+
     solFinal = Vector{solSim}(undef,length(j))
-    rSol = Matrix{Float64}(undef,ntStops,3)
-    vSol = Matrix{Float64}(undef,ntStops,3)
-    βSol = Matrix{Float64}(undef,ntStops,4)
-    βdotSol = Matrix{Float64}(undef,ntStops,4)
     for i=1:length(j)
+        rSol = Matrix{Float64}(undef,ntStops,3)
+        βSol = Matrix{Float64}(undef,ntStops,4)
+        vSol = Matrix{Float64}(undef,ntStops,3)
+        βdotSol = Matrix{Float64}(undef,ntStops,4)
         for t=1: ntStops
             rSol[t,:] = sol[14*i+1:14*i+3,t]
-            vSol[t,:] = sol[14*i+8:14*i+10,t]
             βSol[t,:] = sol[14*i+4:14*i+7,t]
+            vSol[t,:] = sol[14*i+8:14*i+10,t]
             βdotSol[t,:] = sol[14*i+11:14*i+14,t]
         end
         solFinal[i] = solSim(rSol,vSol,βSol,βdotSol)
@@ -75,18 +74,18 @@ function simulateRK4(tEnd::Float64,tSpan::Float64,j::Joint...;
     end
 
     # Using native RK implementation
-    sol = rk4(tEnd,0.0,X0,j,mainDynRK, h = tSpan)
+    tSim, sol = rk4(tEnd,0.0,X0,j,mainDynRK, h = tSpan)
     nBodies = length(j) + 1
-    ntStops = Int64(length(sol)/(14*nBodies))
-    tSim, sol = reshape(sol,(14*nBodies,ntStops))
+    ntStops = length(tSim)
+    sol = reshape(sol,(14*nBodies,ntStops))
 
     solFinal = Vector{solSim}(undef,length(j))
-    rSol = Matrix{Float64}(undef,ntStops,3)
-    vSol = Matrix{Float64}(undef,ntStops,3)
-    βSol = Matrix{Float64}(undef,ntStops,3)
-    βdotSol = Matrix{Float64}(undef,ntStops,3)
-    for t=1: ntStops
-        for i=1:length(j)
+    for i=1:length(j)
+        rSol = Matrix{Float64}(undef,ntStops,3)
+        vSol = Matrix{Float64}(undef,ntStops,3)
+        βSol = Matrix{Float64}(undef,ntStops,3)
+        βdotSol = Matrix{Float64}(undef,ntStops,3)
+        for t=1: ntStops
             rSol[t,:] = sol[14*i+1:14*i+3,t]
             vSol[t,:] = sol[14*i+8:14*i+10,t]
             βSol[t,:] = sol[14*i+4:14*i+7,t]

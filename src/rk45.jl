@@ -1,10 +1,12 @@
 # Native implementation of ode45 to check for speed.
-function rk45(tEnd::Float64, tStart::Float64, x0, p, f::Function; eps::Float64=1e-3)
-    # x0's type has not been declared because we do not know if it is a vector or a single float object.
+include("Joint.jl")
+
+function rk45(tEnd::Float64, tStart::Float64, x0::Vector{Float64}, p::Tuple{Vararg{Joint}}, f::Function; eps::Float64=1e-3)
     # eps: Tolerance, default value: 1e-3
     # To solve xdot = f(t,x)
     # p: Parameters
 
+    tSim = Float64[]; push!(tSim,tStart)
     xSol = Float64[]; xSol = vcat(xSol,x0)
     h = 0.01 # Initial step size. Arbitrary
     len = length(x0) # Length of vector
@@ -29,10 +31,11 @@ function rk45(tEnd::Float64, tStart::Float64, x0, p, f::Function; eps::Float64=1
             t = t + h
             x = y1
             xSol = vcat(xSol,x)
+            push!(tSim,t)
             h = δ*h
         else
             h = δ*h
         end
     end
-    return xSol
+    return tSim, xSol
 end
