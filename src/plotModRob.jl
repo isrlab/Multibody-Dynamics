@@ -3,7 +3,10 @@ include("../src/OrientationConversion.jl")
 include("../src/simulate.jl")
 
 using JLD
-sol = load("ModRob1dSec.jld")
+clearconsole()
+
+# sol = load("ModRob1dSecSim.jld")
+sol = load("ModRob1dSecRK45.jld")
 solFinal = sol["solFinal"]
 tSim = sol["tSim"]
 
