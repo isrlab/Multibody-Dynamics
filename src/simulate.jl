@@ -49,8 +49,8 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
-    sol = solve(prob, saveat = tSpan, RK4(), reltol=1e-10, abstol=1e-10)
-    # sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)
+    sol = solve(prob, saveat = tSpan, RK4())#, reltol=1e-10, abstol=1e-10)
+    # sol = solve(prob, Tsit5())#, reltol=1e-10, abstol=1e-10)
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)

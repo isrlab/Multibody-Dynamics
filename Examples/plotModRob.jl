@@ -1,14 +1,14 @@
-include("../src/plotSol.jl")
-include("../src/OrientationConversion.jl")
-include("../src/simulate.jl")
-
-using JLD
-clearconsole()
-
-# sol = load("ModRob1dSecSim.jld")
-sol = load("ModRob1dSecRK45.jld")
-solFinal = sol["solFinal"]
-tSim = sol["tSim"]
+# include("../src/plotSol.jl")
+# include("../src/OrientationConversion.jl")
+# include("../src/simulate.jl")
+#
+# using JLD
+# clearconsole()
+#
+# savedSol = load("ModRob1dSecSimRK45NoTol.jld") # DifferentialEquations
+# # sol = load("ModRob1dSecRK4.jld") # Native RK
+# solFinal = savedSol["solFinal"]
+# tSim = savedSol["tSim"]
 
 ## Assigning solutions
 solBody1 = solFinal[1]

@@ -39,7 +39,7 @@ function simulateRK45(tEnd::Float64,tSpan::Float64,j::Joint...;
     end
 
     # Using native RK implementation
-    tSim, sol = rk45(tEnd,0.0,X0,j,mainDynRK,eps = 1e-6)
+    tSim, sol = rk45(tEnd,0.0,X0,j,mainDynRK)#,eps = 1e-6)
     nBodies = length(j) + 1
     ntStops = length(tSim)
     sol = reshape(sol,(14*nBodies,ntStops))
@@ -83,8 +83,8 @@ function simulateRK4(tEnd::Float64,tSpan::Float64,j::Joint...;
     for i=1:length(j)
         rSol = Matrix{Float64}(undef,ntStops,3)
         vSol = Matrix{Float64}(undef,ntStops,3)
-        βSol = Matrix{Float64}(undef,ntStops,3)
-        βdotSol = Matrix{Float64}(undef,ntStops,3)
+        βSol = Matrix{Float64}(undef,ntStops,4)
+        βdotSol = Matrix{Float64}(undef,ntStops,4)
         for t=1: ntStops
             rSol[t,:] = sol[14*i+1:14*i+3,t]
             vSol[t,:] = sol[14*i+8:14*i+10,t]
