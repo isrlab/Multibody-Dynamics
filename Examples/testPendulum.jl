@@ -23,7 +23,7 @@ rj2 = [-l/2 0.0 0.0][:] # Joint location in body frame of second body
 j = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axisY)
 
 # External Forces Definition
-g = [0.0;0.0;-9.806]
+const g = MVector{3}([0.0,0.0,-9.806]) # Gravity Vector.
 
 ## Simulation
 tEnd = 1.0
