@@ -6,6 +6,7 @@ include("../src/plotSol.jl")
 include("../src/simulate.jl")
 include("../src/OrientationConversion.jl")
 clearconsole()
+##
 mb = 0.155; mp = 0.02;
 
 Ib =  [ 0.0009    0.0000   -0.0000;
@@ -26,44 +27,57 @@ x0Props = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
 initialiseRigidBody!(Props,x0Props)
 
 axis = [0.0 0.0 1.0][:]
-rjCube = [0.0 0.0 0.143][:]
-rjProp = [0.0 0.0 0.0][:]
+rjCube = [0.0 0.0 0.043][:]
+rjProp = [0.0 0.0 -0.1][:]
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
-j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Weld",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
+j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Spherical",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
 
 # External Forces Definition
-g = [0.0;0.0;0.0]
+# const g = [0.0;0.0;0.0]
 
-# Simulation
-tEnd = 1.0
+## Simulation
+tEnd = 0.1
 tSpan = 0.01
-g = [0.0;0.0;0.0]
+g = MVector{3}([0.0,0.0,0.0]) # Gravity Vector.
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)
 
 solQuad = solFinal[1]
 solProp = solFinal[2]
+##
+ωCube, ωProp, ωRel, jointLoc = checkRevJoint(solQuad, solProp, rjCube, rjProp);
 
+##
 plotErrNorm(tSim,solQuad.β)
 plotErrNorm(tSim,solProp.β)
 # Check if joint location has moved
-jointLoc = Matrix{Float64}(undef,length(tSim),3)
-ωCube = Matrix{Float64}(undef,length(tSim),3)
-ωProp = Matrix{Float64}(undef,length(tSim),3)
-ωPropInCube = Matrix{Float64}(undef,length(tSim),3)
-ωRel = Matrix{Float64}(undef,length(tSim),3)
-for i=1:length(tSim)
-    QuadCube.dcm = quat2dcm(solQuad.β[i,:])
-    ωCube[i,:] = angVel(solQuad.β[i,:],solQuad.βdot[i,:])
-    ωProp[i,:] = angVel(solProp.β[i,:],solProp.βdot[i,:])
-    ωPropInCube[i,:] = quat2dcm(solQuad.β[i,:])*transpose(quat2dcm(solProp.β[i,:]))*ωProp[i,:]
-    ωRel[i,:] = ωPropInCube[i,:] - ωCube[i,:]
-    jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
-end
+# jointLoc = Matrix{Float64}(undef,length(tSim),3)
+# ωCube = Matrix{Float64}(undef,length(tSim),3)
+# ωProp = Matrix{Float64}(undef,length(tSim),3)
+# ωPropInCube = Matrix{Float64}(undef,length(tSim),3)
+# ωRel = Matrix{Float64}(undef,length(tSim),3)
+# for i=1:length(tSim)
+#     QuadCube.dcm = quat2dcm(solQuad.β[i,:])
+#     ωCube[i,:] = angVel(solQuad.β[i,:],solQuad.βdot[i,:])
+#     ωProp[i,:] = angVel(solProp.β[i,:],solProp.βdot[i,:])
+#     ωPropInCube[i,:] = quat2dcm(solQuad.β[i,:])*transpose(quat2dcm(solProp.β[i,:]))*ωProp[i,:]
+#     ωRel[i,:] = ωPropInCube[i,:] - ωCube[i,:]
+#     jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
+# end
+##
 plotPos(tSim,jointLoc)
 plotVel(tSim,solQuad.v - solProp.v)
 plotAngVel(tSim,ωCube)
 plotAngVel(tSim,ωProp)
+plotAngVel(tSim, ωRel)
+plotPos(tSim, solQuad.r)
+plotPos(tSim, solProp.r)
+plotQuat(tSim, solProp.β)
+plotPos(tSim, solQuad.r + solProp.r)
+##
+clearconsole()
+j1 = Nothing
+j2 = Nothing
 # plotAngVel(tSim,ωRel)
 # plotAngVel(tSim,ωCube - ωProp)
 

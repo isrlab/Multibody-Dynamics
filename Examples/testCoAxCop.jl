@@ -6,8 +6,12 @@
 include("../src/plotSol.jl")
 include("../src/simulate.jl")
 include("../src/OrientationConversion.jl")
+##
 clearconsole()
-
+j1 = Nothing
+j2 = Nothing
+j3 = Nothing
+j4 = Nothing
 ## Inertial Properties
 mb = 0.755; mg = 0.215; mp = 0.02;
 
@@ -72,7 +76,7 @@ j4 = Joint(Gimbal,Prop2,rjGimbal3,rjProp2,
 ## Simulation
 tEnd = 1.0
 tSpan = 0.01
-g = [0.0;0.0;0.0]
+g = MVector{3}([0.0,0.0,0.0]) # Gravity Vector.
 tSim, solFinal = simulate(tEnd,tSpan,j1,j2,j3,j4,g=g)#,extFVec = extFList)
 
 solBody = solFinal[1]
