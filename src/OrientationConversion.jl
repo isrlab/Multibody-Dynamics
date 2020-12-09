@@ -201,6 +201,13 @@ function genE(β::Vector{Float64})::Matrix{Float64}
 
 end
 
+function genEdot(βdot::Vector{Float64})::Matrix{Float64}
+    X = [                        transpose(βdot)
+         -βdot[2:4] βdot[1]*Matrix{Float64}(I,3,3) - skewX(βdot[2:4])]
+    return X
+
+end
+
 function quaternionProduct(β1::Vector{T},β2::Vector{T})::Vector{T} where T <: Real
     x = [β1[1]*β2[1] - dot(β1[2:4],β2[2:4]);
          β1[2]*β2[2:4] + β2[1]*β1[2:4] + cross(β1[2:4],β2[2:4])]

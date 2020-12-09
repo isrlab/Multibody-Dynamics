@@ -19,7 +19,7 @@ mutable struct RigidBody
     In::Matrix{Float64}; # Moment of inertia 3x3 matrix
     orientation::String; # "321", "quaternions". Only these two supported now.
     # This will determine how many states there are
-    # 12 for euler angle, 13 for quartenions.
+    # 12 for euler angle, 13 for quaternions.
     bodyID::Integer # Body number in robot tree
 
     # Internal variables
@@ -68,44 +68,13 @@ mutable struct RigidBody
     end
 end
 
-# function rbDynEuler(xdot::Vector{Float64}, RB::RigidBody,
-#     PositionList::Matrix{Float64}, ForceList::Matrix{Float64},
-#     TorqueList::Matrix{Float64}, GravityInInertial::Vector{Float64})
-#     # States are: 12 states
-#     # x = [x,y,z]:inertial, [u,v,w]:body, [ϕ,θ,ψ], [ω1,ω2,ω3]:body
-#     # Forces in ForceList are decribed in body reference, ForceList is nFx3.
-#     # PositionList are positions where forces are acting relative to cm,
-#     # decribed in body reference, PositionList is nFx3.
-#     # Torques in TorqueList are in body reference. TorqueList is matrix nTx3
-#
-#     xpos = RB.x[1];  # x position in inertial frame
-#     ypos = RB.x[2];  # y position in inertial frame
-#     h    = RB.x[3];  # z position in inertial frame
-#
-#     u = RB.x[4:6];   # Velocities in body reference frame
-#     ang = RB.x[7:9];     # Euler parameters
-#     ω = RB.x[10:12]; # Angular velocity  in body reference frame
-#
-#     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
-#     ang2dcm(RB.dcm,ang,RB.orientation); # Have to code this up.
-#
-#     GravityInBody = RB.dcm*GravityInInertial;  # Convert to body reference
-#
-#     xdot[1:3] = RB.dcm'*u; # Velocities in inertial frame.
-#     xdot[4:6] = sum(ForceList,dims=1)/RB.m + GravityInBody; # Euler's first law.
-#     xdot[7:9] = # Code this
-#
-#     # ω dot equation -- Euler's second law
-#     TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(Fi)[1]) + sum(TorqueList,dims=1);
-#     xdot[10:12] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
-# end
 
 function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64})::Vector{Float64}
 
     # States are: 14 states
     # x = [x,y,z]:inertial, [u,v,w]:inertial, [β0,β1,β2,β3], [β̇0,β̇1,β̇2,β̇3]
     # unconstrainedF is a 7x1 vector, unique to each rigid body.
-    # Fc is the force generated from constraints acting on the rigid body. Unique to each body. 7x1 vector.
+    # Fc is the  generalised force coming from constraints acting on the rigid body. Unique to each body. 7x1 vector.
 
     xdot = Vector{Float64}(undef,14)
 
@@ -116,7 +85,7 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
     TotalForce = unconstrainedF[1:3] + Fc[1:3]
     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
 
-    # Udwadia's formulation using 14 States
+    # # Udwadia's formulation using 14 States
     E = genE(β)
     xdot[1:3] = u
     xdot[8:10] = TotalForce/RB.m
@@ -166,3 +135,36 @@ function zeroExtForceVec(l::Int64)::Vector{extForces}
     end
     return v
 end
+
+## Euler angle formulation (12 states)
+# function rbDynEuler(xdot::Vector{Float64}, RB::RigidBody,
+#     PositionList::Matrix{Float64}, ForceList::Matrix{Float64},
+#     TorqueList::Matrix{Float64}, GravityInInertial::Vector{Float64})
+#     # States are: 12 states
+#     # x = [x,y,z]:inertial, [u,v,w]:body, [ϕ,θ,ψ], [ω1,ω2,ω3]:body
+#     # Forces in ForceList are decribed in body reference, ForceList is nFx3.
+#     # PositionList are positions where forces are acting relative to cm,
+#     # decribed in body reference, PositionList is nFx3.
+#     # Torques in TorqueList are in body reference. TorqueList is matrix nTx3
+#
+#     xpos = RB.x[1];  # x position in inertial frame
+#     ypos = RB.x[2];  # y position in inertial frame
+#     h    = RB.x[3];  # z position in inertial frame
+#
+#     u = RB.x[4:6];   # Velocities in body reference frame
+#     ang = RB.x[7:9];     # Euler parameters
+#     ω = RB.x[10:12]; # Angular velocity  in body reference frame
+#
+#     # DCM w.r.t Euler parameters. vb = C*vn, inertial to body.
+#     ang2dcm(RB.dcm,ang,RB.orientation); # Have to code this up.
+#
+#     GravityInBody = RB.dcm*GravityInInertial;  # Convert to body reference
+#
+#     xdot[1:3] = RB.dcm'*u; # Velocities in inertial frame.
+#     xdot[4:6] = sum(ForceList,dims=1)/RB.m + GravityInBody; # Euler's first law.
+#     xdot[7:9] = # Code this
+#
+#     # ω dot equation -- Euler's second law
+#     TotalMoment = sum(cross(PositionList[i,:],ForceList[i,:]) for i in 1:size(Fi)[1]) + sum(TorqueList,dims=1);
+#     xdot[10:12] = RB.invI*(TotalMoment - cross(ω,RB.I*ω));
+# end

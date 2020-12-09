@@ -49,8 +49,9 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
     prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
-    sol = solve(prob, saveat = tSpan, RK4())#, reltol=1e-10, abstol=1e-10)
-    # sol = solve(prob, Tsit5())#, reltol=1e-10, abstol=1e-10)
+    # sol = solve(prob, saveat = tSpan, RK4())#, reltol=1e-10, abstol=1e-10)
+    # sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)
+    sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)
@@ -89,7 +90,12 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     # unconstrF is the matrix of the unconstrained Forces acting on the robot.
     # constrF is the matrix of the constraint Forces acting on the system developed using UK formulation
 
-    dX[1:14] = zeros(14)
+
+    # jointID = 2;
+    println()
+    println("t = ", t)
+
+    dX[1:14] = zeros(14) # For the inertial frame (no motion)
     for k=1:length(j)
         dX[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], constrF[:,j[k].RB2.bodyID])
     end
@@ -124,4 +130,25 @@ function externalFTotal(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
         vcat(extFListCopy[j[k].RB2.bodyID].Torques, reshape(ForceJoints[4:6,2*k],(1,3)))
     end
     return extFListCopy
+end
+
+function checkRevJoint(solQuad::solSim, solProp1::solSim, rjCube1::Array{Float64}, rjProp1::Array{Float64})
+    ## Function that outputs relevant quantities constrained under a revolute joint
+    tLen = size(solQuad.r,1)
+    ωCube = Matrix{Float64}(undef,tLen,3);
+    ωProp1 = Matrix{Float64}(undef,tLen,3);
+    ωProp1InCube = Matrix{Float64}(undef,tLen,3);
+    ωRel = Matrix{Float64}(undef,tLen,3);
+    jointLoc1 = Matrix{Float64}(undef,length(tSim),3);
+    for i=1:tLen
+        dcm = quat2dcm(solQuad.β[i,:])
+        dcm2 = quat2dcm(solProp1.β[i,:])
+        ωCube[i,:] = angVel(solQuad.β[i,:],solQuad.βdot[i,:])
+        ωProp1[i,:] = angVel(solProp1.β[i,:],solProp1.βdot[i,:])
+        ωProp1InCube[i,:] = quat2dcm(solQuad.β[i,:])*transpose(quat2dcm(solProp1.β[i,:]))*ωProp1[i,:]
+        ωRel[i,:] = ωProp1InCube[i,:] - ωCube[i,:]
+        jointLoc1[i,:] = solQuad.r[i,:] + transpose(dcm)*rjCube1 - solProp1.r[i,:] - transpose(dcm2)*rjProp1;
+        # jointLoc1[i,:] = solProp1.r[i,:] + transpose(dcm2)*rjProp1;
+    end
+    return ωCube, ωProp1, ωRel, jointLoc1
 end

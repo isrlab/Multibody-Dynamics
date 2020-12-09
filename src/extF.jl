@@ -17,14 +17,15 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # First body always the inertial frame
     # extFList[1] = zeroExtForce()
 
-    # Pendulum Test
+    # Double Pendulum Test
     # extFList[2] = zeroExtForce()
+    # extFList[3] = extForces([0.0 0 0],[0.0 0 0],[0.0 0.0 0.0])
 
     # Joint Test
     # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.01])
 
     # Cube Prop Test
-    # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.001])
+    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.01 0.0 0.0])
 
     # CoAxCop
     # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
@@ -36,11 +37,16 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
+    # QuadTest
+    # extFList[3] = extForces([0.0 0.0 -0.01], zeros(1,3), zeros(1,3))
+    # extFList[4] = extForces([0.0 0.0 0.01], zeros(1,3), zeros(1,3))
+    # extFList[5] = extForces([0.0 0.0 -0.01], zeros(1,3), zeros(1,3))
+    # extFList[6] = extForces([0.0 0.0 0.01], zeros(1,3), zeros(1,3))
     # ModRob
-    grav = [0.0,0.0,-9.806]
+    # grav = [0.0,0.0,-9.806]
 
-    extFList[5] = extForces(transpose(-TotalMass*grav/2), zeros(1,3), zeros(1,3))
-    extFList[10] = deepcopy(extFList[5])
+    # extFList[5] = extForces(transpose(-TotalMass*grav/2), zeros(1,3), zeros(1,3))
+    # extFList[10] = deepcopy(extFList[5])
     return extFList
 end
 
@@ -56,6 +62,10 @@ function genJointF(t::Float64,j::Joint)::Tuple{Vector{Float64}, Vector{Float64}}
     Fb2[1:3] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[1:3]
     Fb2[4:6] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[4:6]
 
+    if j==2
+        print("Fb = \t")
+        println(Fb2)
+    end
     return (Fb1,Fb2)
 
 end

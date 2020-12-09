@@ -1,40 +1,76 @@
-using Plots;pyplot()
+using PyPlot;
 
-function plotPos(tSim,rSol)
-    p1r = plot(tSim,rSol[:,1], title="x", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p2r = plot(tSim,rSol[:,2], title="y", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p3r = plot(tSim,rSol[:,3], title="z", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    pr = plot(p1r,p2r,p3r,layout=(3,1))
+function plotPos(tSim,rSol, titleStr::String="Pos")
+    figure(); clf;
+    pygui(true);
+    subplot(3,1,1);
+    PyPlot.plot(tSim,rSol[:,1]); xlabel("t"); ylabel("x");
+    subplot(3,1,2);
+    PyPlot.plot(tSim,rSol[:,2]); xlabel("t"); ylabel("y")
+    subplot(3,1,3);
+    PyPlot.plot(tSim,rSol[:,3]); xlabel("t"); ylabel("z")
+    PyPlot.suptitle(titleStr)
+    tight_layout();
 end
 
-function plotVel(tSim,vSol)
-    p1v = plot(tSim,vSol[:,1], title="u", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p2v = plot(tSim,vSol[:,2], title="v", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p3v = plot(tSim,vSol[:,3], title="w", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    pv = plot(p1v,p2v,p3v,layout=(3,1))
+function plotVel(tSim,vSol, titleStr::String="Vel")
+    figure(); clf;
+    pygui(true);
+    subplot(3,1,1);
+    PyPlot.plot(tSim,vSol[:,1]); xlabel("t"); ylabel("u");
+    subplot(3,1,2);
+    PyPlot.plot(tSim,vSol[:,2]); xlabel("t"); ylabel("v")
+    subplot(3,1,3);
+    PyPlot.plot(tSim,vSol[:,3]); xlabel("t"); ylabel("w")
+    PyPlot.suptitle(titleStr)
+    tight_layout();
+
 end
 
-function plotQuat(tSim,βSol)
-    p1 = plot(tSim,βSol[:,1], title="q0", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p2 = plot(tSim,βSol[:,2], title="q1", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p3 = plot(tSim,βSol[:,3], title="q2", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p4 = plot(tSim,βSol[:,4], title="q3", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p = plot(p1,p2,p3,p4,layout=(4,1))
+function plotQuat(tSim,βSol, titleStr::String="Quaternion")
+    figure(); clf;
+    pygui(true);
+    subplot(4,1,1);
+    PyPlot.plot(tSim,βSol[:,1]); xlabel("t"); ylabel("β0");
+    subplot(4,1,2);
+    PyPlot.plot(tSim,βSol[:,2]); xlabel("t"); ylabel("β1")
+    subplot(4,1,3);
+    PyPlot.plot(tSim,βSol[:,3]); xlabel("t"); ylabel("β2")
+    subplot(4,1,4);
+    PyPlot.plot(tSim,βSol[:,4]); xlabel("t"); ylabel("β3")
+    PyPlot.suptitle(titleStr)
+    tight_layout();
+
 end
 
-function plotQuatDot(tSim,βdotSol)
-    p1 = plot(tSim,βdotSol[:,1], title="q0dot", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p2 = plot(tSim,βdotSol[:,2], title="q1dot", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p3 = plot(tSim,βdotSol[:,3], title="q2dot", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p4 = plot(tSim,βdotSol[:,4], title="q3dot", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p = plot(p1,p2,p3,p4,layout=(4,1))
+function plotQuatDot(tSim,βdotSol, titleStr::String="Quat Dot")
+    figure(); clf;
+    pygui(true);
+    subplot(4,1,1);
+    PyPlot.plot(tSim,βdotSol[:,1]); xlabel("t"); ylabel("̇β̇0");
+    subplot(4,1,2);
+    PyPlot.plot(tSim,βdotSol[:,2]); xlabel("t"); ylabel("β̇1")
+    subplot(4,1,3);
+    PyPlot.plot(tSim,βdotSol[:,3]); xlabel("t"); ylabel("β̇2")
+    subplot(4,1,4);
+    PyPlot.plot(tSim,βdotSol[:,4]); xlabel("t"); ylabel("β̇3")
+    PyPlot.suptitle(titleStr)
+    tight_layout();
+
 end
 
-function plotAngVel(tSim,ωSol)
-    p1 = plot(tSim,ωSol[:,1], title="w1", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p2 = plot(tSim,ωSol[:,2], title="w2", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p3 = plot(tSim,ωSol[:,3], title="w3", xlabel="t")#, label = ["WithUpdate" "WithoutUpdate"], show=true)
-    p = plot(p1,p2,p3,layout=(3,1))
+function plotAngVel(tSim,ωSol, titleStr::String="Ang Vel")
+    figure(); clf;
+    pygui(true);
+    subplot(3,1,1);
+    PyPlot.plot(tSim,ωSol[:,1]); xlabel("t"); ylabel("ω1");
+    subplot(3,1,2);
+    PyPlot.plot(tSim,ωSol[:,2]); xlabel("t"); ylabel("ω2")
+    subplot(3,1,3);
+    PyPlot.plot(tSim,ωSol[:,3]); xlabel("t"); ylabel("ω3")
+    PyPlot.suptitle(titleStr)
+    tight_layout();
+
 end
 
 function plotErrNorm(tSim,βSol)
@@ -43,5 +79,9 @@ function plotErrNorm(tSim,βSol)
         errNormβ[i] = norm(βSol[i,:],2)^2 - 1.0
     end
     errNorm = broadcast(abs,errNormβ)
-    p = plot(tSim,errNorm, title = "Drift in ||q||")
+    figure(); clf;
+    pygui(true)
+    plot(tSim,errNorm); title("Drift in ||q||")
+    tight_layout();
+
 end
