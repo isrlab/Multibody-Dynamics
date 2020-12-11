@@ -12,7 +12,7 @@ function thdot!(thdot::Vector{Float64},th::Vector{Float64})
     global l, m
     # thdot = zeros(2)
     thdot[1] = th[2]
-    thdot[2]  = -3*9.806/2/l*sin(th[1])
+    thdot[2]  = 3*9.806/2/l*sin(th[1])
     # return thdot
 end
 
@@ -40,6 +40,7 @@ end
 rSol = [xSol ySol zSol]
 ωSol = [ySol thDotSol ySol]
 plotAngVel(tSim,ωSol)
+plotPos(tSim, rSol)
 # save("PendulumMin.jld","rMin",rSol,"ωMin", ωSol,"vMin",vSol)
 
 # rSol = transpose(sol[1:3,:])
