@@ -901,14 +901,14 @@ function genExtF(b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3}
     b.dcm = quat2dcm(β)
     b.ω = angVel(β,βdot)
     E = genE(β)
-    Edot = -genE(βdot)
+    Edot = genE(βdot)
     TotalMoment = zeros(3)
     for i in 1:size(extF.Forces)[1]
         TotalMoment = TotalMoment + cross(extF.Positions[i,:],extF.Forces[i,:])
     end
     TotalMoment = TotalMoment + sum(extF.Torques,dims=1)[:]
     Γb = [0.0;TotalMoment] # In the body frame
-    Γu = 2*E*Γb
+    Γu = 2*transpose(E)*Γb
     F = [transpose(b.dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
          Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
     return F
