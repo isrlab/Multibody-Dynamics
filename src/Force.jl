@@ -145,9 +145,10 @@ function ForceFreeIn(j::Joint)::Tuple{Matrix{Float64}, Vector{Float64}}
     b2 = j.RB2
 
     # Revolute Joint has 7 constraints
-    A = zeros(1,14); b = [0.0];
-    A[1,1:7] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
-
+    A = zeros(1,14);b = [0.0];
+    QcA, Qcb = QuatNormConstraint(j)
+    # A[1,1:7] = QuatNormConstraint(j)[1][2,8:14]; b[1] = QuatNormConstraint(j)[2][2]
+    A[1,:] = QcA[2,:]; b[1] = Qcb[2]
     return (A,b)
 
 end
@@ -311,17 +312,17 @@ function ForceConSpr(j::Joint)::Tuple{Matrix{Float64}, Vector{Float64}}
 
     # First body
     E1 = genE(j.RB1.x[4:7])
-    F1 = j.k*(norm(posSpr1-posSpr2)-j.restLen)*unitVec # Force exerted by spring on the first body
-    τ1 = cross(transpose(j.RB1.dcm)*j.pos1,F1) # Torque exerted by spring on the first body
-    Γb1 = [0.0;j.RB1.dcm*τ1]
-    Γu1 = 2*E1*Γb1
+    F1 = j.k*(norm(posSpr1-posSpr2)-j.restLen)*unitVec # Force exerted by spring on the first body (inertial frame)
+    τ1 = cross(transpose(j.RB1.dcm)*j.pos1,F1) # Torque exerted by spring on the first body (inertial frame)
+    Γb1 = [0.0;j.RB1.dcm*τ1] #(body frame)
+    Γu1 = 2*transpose(E1)*Γb1 # generalized torque vector
 
     # Second body
     E2 = genE(j.RB2.x[4:7])
     F2 = -F1 # Force exerted by spring on second body
     τ2 = cross(transpose(j.RB2.dcm)*j.pos2,F2) # Torque exerted by spring on second body
     Γb2 = [0.0;j.RB2.dcm*τ2]
-    Γu2 = 2*E2*Γb2
+    Γu2 = 2*transpose(E2)*Γb2
 
     # QuatNormConstraint
     A = zeros(2,14); b = zeros(2)
