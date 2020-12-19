@@ -48,10 +48,10 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
         append!(X0,j[k].RB2.x)
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
-    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),j)
-    # sol = solve(prob, saveat = tSpan, RK4())#, reltol=1e-10, abstol=1e-10)
-    # sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)
-    sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
+    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),(j,k))
+    # sol = solve(prob, saveat = tSpan, RK4(), reltol=1e-10, abstol=1e-10)
+    sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10, saveat = 0:tSpan:tEnd)
+    # sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)
@@ -79,7 +79,7 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
     global GravityInInertial
     # Update RigidBodies
-    updateRigidBody!(j[1].RB1,X[1:14])
+    updateRigidBody!(j[1].RB1,X[1:14]) # update inertial frame (not moving)
     for k=1:length(j)
         updateRigidBody!(j[k].RB2,X[14*k+1:14*(k+1)])
     end
@@ -90,9 +90,6 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     # unconstrF is the matrix of the unconstrained Forces acting on the robot.
     # constrF is the matrix of the constraint Forces acting on the system developed using UK formulation
 
-
-    # jointID = 2;
-    println()
     println("t = ", t)
 
     dX[1:14] = zeros(14) # For the inertial frame (no motion)

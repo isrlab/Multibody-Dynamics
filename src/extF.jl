@@ -25,7 +25,8 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.01])
 
     # Cube Prop Test
-    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.01 0.0 0.0])
+    # extFList[2] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.0])
+    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1])
 
     # CoAxCop
     # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
@@ -38,10 +39,10 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # QuadTest
-    # extFList[3] = extForces([0.0 0.0 -0.01], zeros(1,3), zeros(1,3))
-    # extFList[4] = extForces([0.0 0.0 0.01], zeros(1,3), zeros(1,3))
-    # extFList[5] = extForces([0.0 0.0 -0.01], zeros(1,3), zeros(1,3))
-    # extFList[6] = extForces([0.0 0.0 0.01], zeros(1,3), zeros(1,3))
+    extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
+    extFList[4] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
+    extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
+    extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
     # ModRob
     # grav = [0.0,0.0,-9.806]
 
