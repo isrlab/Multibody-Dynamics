@@ -25,8 +25,19 @@ function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, Gravit
     Mfinal = assembleM(j)
     # Assemble F.
     Ffinal = assembleF(j,extFList,GravityInInertial)
+    # println()
+    # println("Afinal = ", Afinal)
+    # println()
+    # println("bfinal = ", bfinal)
+    # println()
+    # println("Ffinal = ", Ffinal)
+    # println()
+    # println("Mfinal = ", Mfinal)
     # Call ConstraintForceTorque with assembled matrices.
     Fc = ConstraintForceTorque(Mfinal,Ffinal,Afinal,bfinal)
+    # println()
+    # println("Fc =", Fc)
+    # sleep(1000)
     # Partition generated ForceConstr for each rigid body.
     ForceConstr = zeros(7,length(j)+1)
     for i=1:length(j)
@@ -39,6 +50,10 @@ function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, Gravit
         k = j[i].RB2.bodyID
         unconstrF[:,k] = Ffinal[7*(k-2)+1:7*(k-1)]
     end
+    # println("unconstrF = ", unconstrF)
+    # println()
+    # println("Fc = ", ForceConstr)
+    # sleep(1000)
     # Return unconstrF, ForceConstr.
     return (unconstrF,ForceConstr)
 end
