@@ -3,7 +3,14 @@
 include("../src/plotSol.jl")
 include("../src/simulate.jl")
 include("../src/OrientationConversion.jl")
+##
 clearconsole()
+j1 = Nothing
+j2 = Nothing
+j3 = Nothing
+j4 = Nothing
+j5 = Nothing
+
 ##
 mb = 0.155; mp = 0.02;
 
@@ -42,13 +49,10 @@ rjCube4 = [-0.5 0.5 0.1][:]
 rjProp = [0.0 0.0 0.0][:];
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3));
-j2 = Joint(QuadCube,Prop1,rjCube1,rjProp,type = "Spherical",axis = axis);#,jointTorque = [0.0;0.0;0.0001]);
-j3 = Joint(QuadCube,Prop2,rjCube2,rjProp,type = "Spherical",axis = axis);
-j4 = Joint(QuadCube,Prop3,rjCube3,rjProp,type = "Spherical",axis = axis);
-j5 = Joint(QuadCube,Prop4,rjCube4,rjProp,type = "Spherical",axis = axis);
-
-# External Forces Definition
-# const g = [0.0;0.0;0.0]
+j2 = Joint(QuadCube,Prop1,rjCube1,rjProp,type = "Revolute",axis = axis);#,jointTorque = [0.0;0.0;0.0001]);
+j3 = Joint(QuadCube,Prop2,rjCube2,rjProp,type = "Revolute",axis = axis);
+j4 = Joint(QuadCube,Prop3,rjCube3,rjProp,type = "Revolute",axis = axis);
+j5 = Joint(QuadCube,Prop4,rjCube4,rjProp,type = "Revolute",axis = axis);
 
 ## Simulation
 tEnd = 0.1;
@@ -85,35 +89,28 @@ solProp4 = solFinal[5];
 #     jointLoc1[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube1 - solProp1.r[i,:]
 # end
 ##
-plotErrNorm(tSim,solQuad.β)
-plotErrNorm(tSim,solProp1.β)
+close("all");
+# plotErrNorm(tSim,solQuad.β)
+# plotErrNorm(tSim,solProp1.β)
 plotPos(tSim,jointLoc2);
 # plotVel(tSim,solQuad.v  - solProp.v);
 # plotAngVel(tSim,ωCube);
-plotAngVel(tSim,ωRel1);
-plotAngVel(tSim,ωProp1)
-plotQuatDot(tSim, solQuad.βdot)
+# plotAngVel(tSim,ωRel1);
+# plotAngVel(tSim,ωProp1)
+# plotQuatDot(tSim, solQuad.βdot)
 ##
-close("all");
+# close("all");
 plotPos(tSim, solQuad.r, "Quad");
-plotQuat(tSim, solQuad.β)
-plotQuatDot(tSim, solQuad.βdot)
-plotErrNorm(tSim, solQuad.β)
+# plotQuat(tSim, solQuad.β)
+# plotQuatDot(tSim, solQuad.βdot)
+# plotErrNorm(tSim, solQuad.β)
 plotPos(tSim, solProp1.r, "Prop1");
-plotVel(tSim, solProp1.v, "Prop1");
+# plotVel(tSim, solProp1.v, "Prop1");
 plotPos(tSim, solProp2.r, "Prop2");
 plotPos(tSim, solProp3.r, "Prop3");
 plotPos(tSim, solProp4.r, "Prop4");
 
-##
-j1 = Nothing
-j2 = Nothing
-j3 = Nothing
-j4 = Nothing
-j5 = Nothing
-##
-clearconsole()
-#
+
 # using JLD
 # save("Quad50s.jld","tSim",tSim,"solFinal", solFinal)
 

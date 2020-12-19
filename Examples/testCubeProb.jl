@@ -5,7 +5,10 @@
 include("../src/plotSol.jl")
 include("../src/simulate.jl")
 include("../src/OrientationConversion.jl")
+##
 clearconsole()
+j1 = Nothing
+j2 = Nothing
 ##
 mb = 0.155; mp = 0.02;
 
@@ -23,15 +26,15 @@ Props = RigidBody(mp,Ip,3)
 
 x0Cube = [zeros(3);[1;zeros(3)];zeros(3);zeros(4)]
 initialiseRigidBody!(QuadCube,x0Cube)
-x0Props = [[0.0;0.0;0.143];[1;zeros(3)];zeros(3);zeros(4)]
+x0Props = [[0.0;0.0;0.5];[1;zeros(3)];zeros(3);zeros(4)]
 initialiseRigidBody!(Props,x0Props)
 
 axis = [0.0 0.0 1.0][:]
-rjCube = [0.0 0.0 0.043][:]
-rjProp = [0.0 0.0 -0.1][:]
+rjCube = [0.0 0.0 0.5][:]
+rjProp = [0.0 0.0 0.0][:]
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
-j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Spherical",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
+j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Revolute",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
 
 # External Forces Definition
 # const g = [0.0;0.0;0.0]
@@ -65,19 +68,19 @@ plotErrNorm(tSim,solProp.β)
 #     jointLoc[i,:] = solQuad.r[i,:] + transpose(QuadCube.dcm)*rjCube - solProp.r[i,:]
 # end
 ##
+close("all");
 plotPos(tSim,jointLoc)
-plotVel(tSim,solQuad.v - solProp.v)
-plotAngVel(tSim,ωCube)
-plotAngVel(tSim,ωProp)
-plotAngVel(tSim, ωRel)
 plotPos(tSim, solQuad.r)
-plotPos(tSim, solProp.r)
-plotQuat(tSim, solProp.β)
-plotPos(tSim, solQuad.r + solProp.r)
+# plotVel(tSim,solQuad.v - solProp.v)
+# plotAngVel(tSim,ωCube)
+plotAngVel(tSim,ωProp)
+# plotAngVel(tSim, ωRel)
+# plotPos(tSim, solQuad.r)
+# plotPos(tSim, solProp.r)
+# plotQuat(tSim, solProp.β)
+# plotPos(tSim, solQuad.r + solProp.r)
 ##
-clearconsole()
-j1 = Nothing
-j2 = Nothing
+
 # plotAngVel(tSim,ωRel)
 # plotAngVel(tSim,ωCube - ωProp)
 

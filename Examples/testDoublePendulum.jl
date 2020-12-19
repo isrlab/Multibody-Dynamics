@@ -5,7 +5,10 @@ include("../src/OrientationConversion.jl")
 using Revise
 using JLD
 using BenchmarkTools
+##
 clearconsole()
+j1 = Nothing
+j2 = Nothing
 ##
 m = 1.0; l = 1.0; # Mass and length of bar
 # Assuming bar revolves about Y axis
@@ -61,26 +64,24 @@ end
 ##
 close("all");
 # plotErrNorm(tSim,solPend.β)
-plotPos(tSim,jointLoc1)# .- jointLoc2)
-plotPos(tSim,jointLoc2)
+plotPos(tSim,jointLoc1 .- jointLoc2)
+# plotPos(tSim,jointLoc2)
 # plotQuat(tSim, solPend1.β)
 # plotAngVel(tSim, ωSol)
 # plotPos(tSim, solPend.r)
 ## Compare with MinReal
-solMin = load("PendulumMin.jld")
-ωMin = solMin["ωMin"]
-rMin = solMin["rMin"]
-vMin = solMin["vMin"]
+solMin = load("DoublePendulumMin.jld")
+r1Min = solMin["r1Min"]
+r2Min = solMin["r2Min"]
 
 # Plotting errors
-plotPos(tSim,rMin-solFinal[1].r)
-plotVel(tSim,vMin-solFinal[1].v)
-plotAngVel(tSim,ωMin+ωSol)
-plotPos(tSim,solPend.r)
+plotPos(tSim,r1Min-solPend1.r)
+plotPos(tSim,r2Min-solPend2.r)
+# plotAngVel(tSim,ωMin+ωSol)
+# plotPos(tSim,solPend.r)
 
 ##
-j1 = Nothing
-j2 = Nothing
+
 
 #
 # # tSim = sol.t

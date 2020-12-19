@@ -50,9 +50,9 @@ end
 close("all");
 plotErrNorm(tSim,solPend1.β) # Drift in quaternion unit norm constraint
 plotPos(tSim,jointLoc1) # Location of joint connecting inertial frame to pendulum. Should be zero.
- 
+
 # plotQuat(tSim, solPend1.β)
-# plotAngVel(tSim, ωSol)
+plotAngVel(tSim, ωSol)
 # plotPos(tSim, solPend.r)
 ## Compare with MinReal
 # Can only be done if simulated with fixed-step
