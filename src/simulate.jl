@@ -48,7 +48,7 @@ function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
         append!(X0,j[k].RB2.x)
     end
     # Declaring the ODE Problem as per DifferentialEquations convention
-    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),(j,k))
+    prob = ODEProblem(mainDynODE!,X0,(0.0,tEnd),(j))
     # sol = solve(prob, saveat = tSpan, RK4(), reltol=1e-10, abstol=1e-10)
     sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10, saveat = 0:tSpan:tEnd)
     # sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
