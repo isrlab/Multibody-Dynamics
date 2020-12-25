@@ -907,6 +907,7 @@ function genMatM(b::RigidBody)::Matrix{Float64}
     J = b.J
     M = [b.m*Matrix{Float64}(I,3,3)          zeros(3,4)
                          zeros(4,3) 4*transpose(E)*J*E]
+    return M                 
 end
 
 function genExtF(b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Float64,1,3})::Vector{Float64}
