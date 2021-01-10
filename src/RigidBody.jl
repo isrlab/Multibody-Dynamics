@@ -8,49 +8,49 @@ using LinearAlgebra
 
 
 mutable struct extForces
-    Forces::Matrix{Float64} # size n x 3 (n Forces)
-    Positions::Matrix{Float64} # size n x 3 (same size as Forces)
-    Torques::Matrix{Float64} # size m x 3 (m Torques)
+    Forces::Matrix{T} where T<:Real# size n x 3 (n Forces)
+    Positions::Matrix{T} where T<:Real # size n x 3 (same size as Forces)
+    Torques::Matrix{T} where T<:Real # size m x 3 (m Torques)
 end
 
 
 mutable struct RigidBody
-    m::Float64; # Mass of the rigid body.
-    In::Matrix{Float64}; # Moment of inertia 3x3 matrix
+    m::T where T<:Real; # Mass of the rigid body.
+    In::Matrix{T} where T<:Real; # Moment of inertia 3x3 matrix
     orientation::String; # "321", "quaternions". Only these two supported now.
     # This will determine how many states there are
     # 12 for euler angle, 13 for quaternions.
     bodyID::Integer # Body number in robot tree
 
     # Internal variables
-    x::Vector{Float64};    # State vector
-    dcm::Matrix{Float64};  # Inertial to body.
-    invI::Matrix{Float64}; # inverse of moment of inertia, compute once during initialization.
-    J::Matrix{Float64} # 4x4 Inertia with first elemtn a random positive number
-    invJ::Matrix{Float64} # inverse of 4x4 inertia matrix
-    ω::Vector{Float64} # Angular velocity in body frame
-    function RigidBody(mass::Float64, Inertia::Matrix{Float64}, bodyID::Integer; orientation::String = "quaternions")
+    x::Vector{T} where T<:Real;    # State vector
+    dcm::Matrix{T} where T<:Real;  # Inertial to body.
+    invI::Matrix{T} where T<:Real; # inverse of moment of inertia, compute once during initialization.
+    J::Matrix{T} where T<:Real # 4x4 Inertia with first elemtn a random positive number
+    invJ::Matrix{T} where T<:Real # inverse of 4x4 inertia matrix
+    ω::Vector{T} where T<:Real # Angular velocity in body frame
+    function RigidBody(mass::T, Inertia::Matrix{T}, bodyID::Integer; orientation::String = "quaternions") where T<:Real
         # if orientation == "321"
         #     x0 = Vector{Float64}(undef,12); # 12 state vector
         # elseif lowercase(orientation) == "quaternions"
-        x0 = Vector{Float64}(undef,14); # 14 state vector
+        x0 = Vector{T}(undef,14); # 14 state vector
         # else
         #     error("Unknown orientation specified")
         # end
 
-        dcm = Matrix{Float64}(undef,3,3);
+        dcm = Matrix{T}(undef,3,3);
 
         if det(Inertia) != 0
             invI = inv(Inertia)
         else
-            invI = Matrix{Float64}(I,3,3)
+            invI = Matrix{T}(I,3,3)
         end
 
         J = [rand(1) zeros(1,3)
              zeros(3,1) Inertia]
         invJ = [1/J[1,1] zeros(1,3)
                 zeros(3,1) invI]
-        xdot = function times2(in::Float64)::Float64
+        xdot = function times2(in::T)::T
             return(2*in);
         end
         this = new();
@@ -63,11 +63,64 @@ mutable struct RigidBody
         this.invI = invI;
         this.J = J
         this.invJ = invJ
-        this.ω = Vector{Float64}(undef,3)
+        this.ω = Vector{T}(undef,3)
         return this;
     end
 end
 
+# mutable struct RigidBody
+#     m::Real; # Mass of the rigid body.
+#     In::Matrix{Real}# where T<:Real; # Moment of inertia 3x3 matrix
+#     orientation::String; # "321", "quaternions". Only these two supported now.
+#     # This will determine how many states there are
+#     # 12 for euler angle, 13 for quaternions.
+#     bodyID::Integer # Body number in robot tree
+#
+#     # Internal variables
+#     x::Vector{Real}# where T<:Real;    # State vector
+#     dcm::Matrix{Real}# where T<:Real;  # Inertial to body.
+#     invI::Matrix{Real}# where T<:Real; # inverse of moment of inertia, compute once during initialization.
+#     J::Matrix{Real}# where T<:Real # 4x4 Inertia with first elemtn a random positive number
+#     invJ::Matrix{Real}# where T<:Real # inverse of 4x4 inertia matrix
+#     ω::Vector{Real}# where T<:Real # Angular velocity in body frame
+#     function RigidBody(mass::Real, Inertia::Matrix{Real}, bodyID::Integer; orientation::String = "quaternions") #where T<:Real
+#         # if orientation == "321"
+#         #     x0 = Vector{Float64}(undef,12); # 12 state vector
+#         # elseif lowercase(orientation) == "quaternions"
+#         x0 = Vector{Real}(undef,14); # 14 state vector
+#         # else
+#         #     error("Unknown orientation specified")
+#         # end
+#
+#         dcm = Matrix{Real}(undef,3,3);
+#
+#         if det(Inertia) != 0
+#             invI = inv(Inertia)
+#         else
+#             invI = Matrix{Real}(I,3,3)
+#         end
+#
+#         J = [rand(1) zeros(Real,(1,3))
+#              zeros(Real,(3,1)) Inertia]
+#         invJ = [1/J[1,1] zeros(Real,(1,3))
+#                 zeros(Real,(3,1)) invI]
+#         xdot = function times2(in::Real)::Real
+#             return(2*in);
+#         end
+#         this = new();
+#         this.m = mass;
+#         this.In = Inertia;
+#         this.bodyID = bodyID
+#         this.orientation = lowercase(orientation);
+#         this.dcm = dcm
+#         this.x = x0;
+#         this.invI = invI;
+#         this.J = J
+#         this.invJ = invJ
+#         this.ω = Vector{Real}(undef,3)
+#         return this;
+#     end
+# end
 
 function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Float64})::Vector{Float64}
 
@@ -95,13 +148,13 @@ function rbDynQuat(RB::RigidBody, unconstrainedF::Vector{Float64}, Fc::Vector{Fl
 end
 
 
-function initialiseRigidBody!(RB::RigidBody,x0::Vector{Float64})::RigidBody
+function initialiseRigidBody!(RB::RigidBody,x0::Vector{T})::RigidBody where T<:Real
     # Initialise rigid body with x0
     RB.x = x0
     return RB
 end
 
-function updateRigidBody!(b::RigidBody,x::Vector{Float64})::RigidBody
+function updateRigidBody!(b::RigidBody,x::Vector{T})::RigidBody where T<:Real
     b.x = x
     b.dcm = quat2dcm(x[4:7])
     b.ω = angVel(x[4:7],x[11:14])
@@ -110,10 +163,10 @@ end
 
 function InertialFrameAsRB()::RigidBody
     m = 0.0
-    I = zeros(3,3)
+    I = zeros(Real,(3,3))
 
     b = RigidBody(m,I,1)
-    b.x = [zeros(3);1;zeros(3);zeros(3);zeros(4)]
+    b.x = Vector{Real}([zeros(3);1.0;zeros(3);zeros(3);zeros(4)]);
     b.dcm = quat2dcm(b.x[4:7])
     b.ω = angVel(b.x[4:7],b.x[11:14])
     return b

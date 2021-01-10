@@ -3,19 +3,22 @@ include("RigidBody.jl")
 include("Joint.jl")
 include("OrientationConversion.jl")
 
-function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
+function extF(t::T, j::Tuple{Vararg{Joint}})::Vector{extForces} where T<:Real
     # Function to generate external forces
     # that may or may not be functions of time
     extFList = zeroExtForceVec(length(j)+1)
 
     # For reference, calculate total mass of robot
-    TotalMass = 0.0
+    TotalMass = T(0.0)
     for i=1:length(j)
         TotalMass += j[i].RB2.m
     end
 
     # First body always the inertial frame
     # extFList[1] = zeroExtForce()
+
+    # Pendulum
+    # extFList[2] = extForces([0.0 0 0.1],[0.0 0 0],[0.0 0.0 0.0]);
 
     # Double Pendulum Test
     # extFList[2] = zeroExtForce()
@@ -39,10 +42,11 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # QuadTest
-    extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
-    extFList[4] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
-    extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
-    extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
+    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
+    # extFList[4] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
+    # extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
+    # extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
+
     # ModRob
     # grav = [0.0,0.0,-9.806]
 
@@ -51,7 +55,7 @@ function extF(t::Float64, j::Tuple{Vararg{Joint}})::Vector{extForces}
     return extFList
 end
 
-function genJointF(t::Float64,j::Joint)::Tuple{Vector{Float64}, Vector{Float64}}
+function genJointF(t::T,j::Joint)::Tuple{Vector{T}, Vector{T}} where T<:Real
     # For actuated joints.
     # j.jointF gives us the actuation force and torque applied ...
     # ... on the child link in the body frame of the parent link
@@ -59,7 +63,7 @@ function genJointF(t::Float64,j::Joint)::Tuple{Vector{Float64}, Vector{Float64}}
     β2 = j.RB2.x[4:7]
 
     Fb1 = -j.jointF # Joint Force acting on parent link
-    Fb2 = Vector{Float64}(undef,6) # Force acting on child link
+    Fb2 = Vector{T}(undef,6) # Force acting on child link
     Fb2[1:3] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[1:3]
     Fb2[4:6] = quat2dcm(β2)*transpose(quat2dcm(β1))*j.jointF[4:6]
 

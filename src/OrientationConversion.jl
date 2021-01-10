@@ -48,7 +48,7 @@
 #     return(ang);
 # end
 
-function dcm2quat(q::Vector{Float64},C::Matrix{Float64})::Vector{Float64}
+function dcm2quat(q::Vector{T},C::Matrix{T})::Vector{T} where T<:Real
     # Check dimensions, etc.
 
     # Apply Sheppard's algorithm
@@ -194,14 +194,14 @@ function angVel(β::Vector{T},βdot::Vector{T})::Vector{T} where T<: Real
     return ω
 end
 
-function genE(β::Vector{Float64})::Matrix{Float64}
+function genE(β::Vector{T})::Matrix{T} where T<:Real
     X = [                        transpose(β)
          -β[2:4] β[1]*Matrix{Float64}(I,3,3) - skewX(β[2:4])]
     return X
 
 end
 
-function genEdot(βdot::Vector{Float64})::Matrix{Float64}
+function genEdot(βdot::Vector{T})::Matrix{T} where T<:Real
     X = [                        transpose(βdot)
          -βdot[2:4] βdot[1]*Matrix{Float64}(I,3,3) - skewX(βdot[2:4])]
     return X

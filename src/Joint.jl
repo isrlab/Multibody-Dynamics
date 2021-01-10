@@ -8,27 +8,27 @@ using LinearAlgebra
 
 mutable struct Joint
     RB1::RigidBody
-    pos1::Vector{Float64} # Coordinates of joint in body-fixed frame of body 1
+    pos1::Vector{T} where T<:Real # Coordinates of joint in body-fixed frame of body 1
 
     RB2::RigidBody
-    pos2::Vector{Float64} # Coordinates of joint in body-fixed frame of body 2
+    pos2::Vector{T} where T<:Real# Coordinates of joint in body-fixed frame of body 2
 
     type::String # "Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"
 
     # Revolute Joint
-    axis::Vector{Float64} # Axis for revolute joint
+    axis::Vector{T} where T<:Real # Axis for revolute joint
 
     # Spring
-    k::Float64
-    restLen::Float64
+    k::T where T<:Real
+    restLen::T where T<:Real
 
     # Joint Actuation: Defined in the body frame of the parent link
-    jointF::Vector{Float64} # Length: 6 [F;τ]
+    jointF::Vector{T} where T<:Real # Length: 6 [F;τ]
 
-    function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{Float64},
-        rj2::Vector{Float64}; type::String="Free",
-        axis::Vector{Float64}=[0.0;0.0;1.0], k::Float64=0.0, rL::Float64=0.0,
-        jointForce::Vector{Float64} = zeros(3), jointTorque::Vector{Float64} = zeros(3))
+    function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{T},
+        rj2::Vector{T}; type::String="Free",
+        axis::Vector{T}=[0.0;0.0;1.0], k::T=0.0, rL::T=0.0,
+        jointForce::Vector{T} = zeros(T,3), jointTorque::Vector{T} = zeros(T,3)) where T<:Real
         # Default values for type, axis, k, and restLen provided.
         allowedTypes = ["Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"]
         if !in(type,allowedTypes)
@@ -49,3 +49,6 @@ mutable struct Joint
         return this
     end
 end
+#
+JointDict = Dict(["Revolute"=>7, "Revolute2"=>6, "Spherical" => 5, "Weld"=>9, "Free" => 2]);
+JointDictIn = Dict(["Revolute"=>6, "Revolute2"=>5, "Spherical" => 4, "Weld"=>8, "Free" => 1]);
