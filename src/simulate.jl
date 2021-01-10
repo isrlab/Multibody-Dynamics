@@ -14,7 +14,7 @@ using Revise
 using DifferentialEquations
 using StaticArrays
 
-global GravityInInertial = MVector{3}([0.0,0.0,-9.806])
+global GravityInInertial = MVector{3, Real}([0.0,0.0,-9.806])
 
 struct solSim
     # Structure to store results of Simulation for each rigid body
@@ -37,13 +37,13 @@ Tolerance of ode solver set. RelTol = 1e-10, AbsTol = 1e-10. \\
 Tsit5() solver used. \\
 Returns a tuple containing tSim and vector of solutions in solSim form.
 """
-function simulate(tEnd::Float64,tSpan::Float64,j::Joint...;
-                  g::MArray{Tuple{3},Float64,1,3}=[0.0;0.0;-9.806])#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
+function simulate(tEnd::Float64,tSpan::Float64,j::Tuple{Vararg{Joint}};
+                  g::MArray{Tuple{3},Real,1,3}=[0.0;0.0;-9.806])#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
     global GravityInInertial = g
     # global extFList = extFVec
-    X0 = j[1].RB1.x
+    X0 = Vector{Float64}(j[1].RB1.x)
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)
     end
@@ -77,6 +77,7 @@ function mainDynODE!(dX::Vector{Float64}, X::Vector{Float64}, j::Tuple{Vararg{Jo
     # ODE function to be used as per DifferentialEquations convention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
+    # println("typeof(X) = ", typeof(X))
     global GravityInInertial
     # Update RigidBodies
     updateRigidBody!(j[1].RB1,X[1:14]) # update inertial frame (not moving)

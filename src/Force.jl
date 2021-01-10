@@ -9,7 +9,7 @@ using ForwardDiff
 using Revise
 using StaticArrays
 
-function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Float64,1,3})::Tuple{Matrix{Float64}, Matrix{Float64}}
+function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{Float64}, Matrix{Float64}}
     A = Matrix{Float64}[] # To enable creating vector of matrices
     bfinal = Float64[]
     for i = 1:length(j)
@@ -33,6 +33,7 @@ function Constraint(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, Gravit
     # println("Ffinal = ", Ffinal)
     # println()
     # println("Mfinal = ", Mfinal)
+    # sleep(1000);
     # Call ConstraintForceTorque with assembled matrices.
     Fc = ConstraintForceTorque(Mfinal,Ffinal,Afinal,bfinal)
     # println()
@@ -104,7 +105,7 @@ function assembleM(j::Tuple{Vararg{Joint}})
     return Mfinal
 end
 
-function assembleF(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Float64,1,3})::Vector{Float64}
+function assembleF(j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Float64}
     maxBodyID = j[end].RB2.bodyID
     F = Vector{Float64}(undef,7*(maxBodyID-1))
 
@@ -384,7 +385,7 @@ function TranslationConstraint(j::Joint)::Tuple{Matrix{Float64}, Vector{Float64}
 
 end
 
-function TranslationConstraintSupplement(x::Vector{T},pos::Vector{T}) where T <: Real
+function TranslationConstraintSupplement(x::Vector{T},pos::Vector{Float64}) where T <: Real
     # To constrain joint wrt body's cm
     β = x[4:7]
     βdot = x[11:14]
@@ -907,10 +908,10 @@ function genMatM(b::RigidBody)::Matrix{Float64}
     J = b.J
     M = [b.m*Matrix{Float64}(I,3,3)          zeros(3,4)
                          zeros(4,3) 4*transpose(E)*J*E]
-    return M                 
+    return M
 end
 
-function genExtF(b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Float64,1,3})::Vector{Float64}
+function genExtF(b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Float64}
     # Function to generate augmented external Force vector for unconstrained system
     # External Forces are always in the body frame
     β = b.x[4:7]
