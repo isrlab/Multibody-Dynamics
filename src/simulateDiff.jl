@@ -37,7 +37,7 @@ Tolerance of ode solver set. RelTol = 1e-10, AbsTol = 1e-10. \\
 Tsit5() solver used. \\
 Returns a tuple containing tSim and vector of solutions in solSim form.
 """
-function simulate(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
+function simulateDiff(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
                   g::MArray{Tuple{3},Real,1,3}=[0.0;0.0;-9.806]) where T<:Real#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
@@ -50,9 +50,9 @@ function simulate(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
     # println("X0 type = ", typeof(X0))
     # println("tEnd type = ", typeof(tEnd))
     # Declaring the ODE Problem as per DifferentialEquations convention
-    tSpanODE = (0.0, tEnd)
-    # println("tSpanODE type = ", typeof(tSpanODE))
-    prob = ODEProblem(mainDynODE,X0,tSpanODE,j)
+    tSpanODE = (0.0, tEnd);
+
+    prob = ODEProblem(mainDynODEDiff,X0,tSpanODE,j)
     # sol = solve(prob, saveat = tSpan, RK4(), reltol=1e-10, abstol=1e-10)
     # sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)#, saveat = 0:tSpan:tEnd)
     sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
@@ -77,19 +77,9 @@ j:: Tuple of Joints. (Length not specified.) \\
 Generates the constraint forces acting on each rigid body present in the system at time t. \\
 dX = f(X,t)
 """
-function mainDynODE(X::Vector{T}, j::Tuple{Vararg{Joint}}, t::Float64)::Vector{T} where T<:Real
+function mainDynODEDiff(X::Vector{T}, j::Tuple{Vararg{Joint}}, t::Float64)::Vector{T} where T<:Real
 
     # println("\ntypeof(X) = ", typeof(X))
-    # nB = j[end].RB2.bodyID - 1; # Number of bodies, discounting inertial frame
-    #
-    # nC = 0 # Number of constraint equations formed
-    # rows = Int64[]
-    # for i=1:nJ
-    #     nC += get(JointDict, j[i].type, 1)
-    #     push!(rows, nC)
-    # end
-    # X = deepcopy(X0);t = 0.0;
-    # X = Vector{T}(undef,length(nJ+1));t = T(0.0);
 
     # ODE function to be used as per DifferentialEquations convention
     # Create extForcesList storing extForces for each rigid body
@@ -103,51 +93,45 @@ function mainDynODE(X::Vector{T}, j::Tuple{Vararg{Joint}}, t::Float64)::Vector{T
 
     extFListCopy = externalFTotal(t,j); # Generates all the external forces explicitly specified, through joint actions or directly.
 
-    # constrF = Constraint(X, j, extFListCopy, GravityInInertial)
-    # constrFJac = ForwardDiff.jacobian(x -> Constraint(x,j,extFListCopy, GravityInInertial), X) # works if Constraint fn returns a vector
-##
-    # function rbDyn(xb::Vector{T},unconstrainedF,Fc, rb)::Vector{Float64} where T<:Real
-    #     f = zeros(14,1) #where T<:Real
-    #     TotalForce = unconstrainedF[1:3] + Fc[1:3]
-    #     TotalMoment = unconstrainedF[4:7] + Fc[4:7]
-    #     f[1:3] = xb[8:10]
-    #     f[8:10] = TotalForce/rb.m
-    #     f[4:7] = xb[11:14]
-    #     E = genE(xb[4:7])
-    #     f[11:14] = 1/4*transpose(E)*rb.invJ*E*TotalMoment
-    #     return f
-    # end
-    # clearconsole()
+    U = genU(extFListCopy) # Construct an input matrix from external forces and torques supplied.
 
+    dX = fxdot(X,U,j,GravityInInertial);
 
-    dX = fxdot(X,j,extFListCopy,GravityInInertial);#[3];
     println("t = $t")
-    # println("Here")
-    # sleep(1000)
-    # println("uF = ", uF)
-    # println("cF = ", cF)
-    # println(" X = ", X[29:end])
-    # println("dX = ", dX[15:end])
-    #
-    # jb = ForwardDiff.jacobian(z -> fxdot([X[1:14];z],j,extFListCopy,GravityInInertial)[3][15:end],X[15:end])
-    # jb = ForwardDiff.jacobian(z -> fxdot(z,j,extFListCopy,GravityInInertial),X)
-    # println("jb = ", jb[15:end, 15:end])
-    # sleep(1000)
-##
-    # unconstrF is the matrix of the unconstrained Forces acting on the robot.
-    # constrF is the matrix of the constraint Forces acting on the system developed using UK formulation
-
-    # dX[1:14] = zeros(14) # For the inertial frame (no motion)
-    # for k=1:length(j)
-    #     dX[14*k+1:14*(k+1)] = rbDynQuat(j[k].RB2, unconstrF[:,j[k].RB2.bodyID], constrF[:,j[k].RB2.bodyID])
-    # end
     return dX
+end
+
+function fxdot(X::Vector{T},U::Matrix{S},j::Tuple{Vararg{Joint}},GravityInInertial::MArray{Tuple{3},Real,1,3}) where {T<:Real,S<:Real}
+    nJ = length(j); # Number of joints
+
+    unconstrF, constrF = Constraint(X, U, j, GravityInInertial)
+
+    xdot = Vector{Union{T,S}}(undef,14*(nJ+1));
+    xdot[1:14] = zeros(14);
+
+    for k=1:nJ
+        xb = X[14*k+1:14*(k+1)]
+
+        unconstrainedF_rb = unconstrF[:,j[k].RB2.bodyID]
+        Fc_rb = constrF[:,j[k].RB2.bodyID]
+        TotalForce = unconstrainedF_rb[1:3] + Fc_rb[1:3]
+        TotalMoment = unconstrainedF_rb[4:7] + Fc_rb[4:7]
+
+        # xdot = xb[8:10]
+        xdot[14*k+1:14*k+3] = X[14*k+8:14*k+10]#xb[8:10]
+        xdot[14*k+4:14*k+7] = X[14*k+11:14*k+14]
+        xdot[14*k+8:14*k+10] = TotalForce/j[k].RB2.m
+        E = genE(X[14*k+4:14*k+7])
+        xdot[14*k+11:14*k+14] = 1/4*transpose(E)*j[k].RB2.invJ*E*TotalMoment
+    end
+
+    return xdot
 end
 
 function externalFTotal(t::T, j::Tuple{Vararg{Joint}})::Vector{extForces} where T<:Real
     # Returns externally applied forces in total, not including gravity. Includes Forces from joints and other explicitly specified external forces.
     extFList = extF(t,j)
-    
+
     # Generate forces from actuated joints on each body
     ForceJoints = Matrix{Float64}(undef,6,2*length(j))
     for k=1:length(j)
@@ -174,44 +158,42 @@ function externalFTotal(t::T, j::Tuple{Vararg{Joint}})::Vector{extForces} where 
     return extFListCopy
 end
 
-function fxdot(X::Vector{T},j,extFListCopy,GravityInInertial) where T<:Real
-    # println("typeof(X) = ", typeof(X));
-    nJ = length(j); # Number of joints
-    unconstrF, constrF = Constraint(X, j, extFListCopy, GravityInInertial)
-    # println("unconstrF[:,2]= ", unconstrF[:,2])
-    # println("constrF[:,2]= ", constrF[:,2])
-    # sleep(1000);
-    # jb = ForwardDiff.jacobian(z -> Constraint([X[1:14];z], j, extFListCopy, GravityInInertial)[2],X[15:end])
-    # println("jb = ", jb)
-    # sleep(1000);
-    xdot = zeros(T,(14*(nJ+1)))# where T<:Real
-    # xdot = zeros(3)
-    xdot[1:14] = zeros(T,14)
+function genU(extFList::Vector{extForces})::Matrix{Float64}
+    nB = length(extFList); # number of bodies
+    u = zeros(6,nB); # Each column in u contains a vector of [F;τ] acting on the corresponding rigid body
+    for b=1:nB
+        extF_b = extFList[b]
+        u[1:3,b] = sum(extF_b.Forces,dims = 1) # Sum up forces acting on body
+        for n in 1:size(extF_b.Forces,1) # Sum up moments acting on body
+            u[4:6,b] += cross(extF_b.Positions[n,:], extF_b.Forces[n,:])
+        end
+        u[4:6,b] += sum(extF_b.Torques, dims = 1)[:] # Sum up torques acting on body
+    end
+    return u
+end
 
-    # println(ForwardDiff.jacobian(x -> Constraint(x,j,extFListCopy,GravityInInertial)[2][:],X))
-    for k=1:nJ
-        xb = X[14*k+1:14*(k+1)]
+function linearizeDiff(x::Vector{T},u::Matrix{S},j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3} = MVector{3,Real}([0.0,0.0,-9.806])) where {T<:Real, S<:Real}
+    A = ForwardDiff.jacobian(z -> fxdot(z,u,j,GravityInInertial),x) # State
+    B = ForwardDiff.jacobian(z -> fxdot(x,z,j,GravityInInertial),u) # Input
+    return A, B
 
-        unconstrainedF_rb = unconstrF[:,j[k].RB2.bodyID]
-        Fc_rb = constrF[:,j[k].RB2.bodyID]
-        TotalForce = unconstrainedF_rb[1:3] + Fc_rb[1:3]
-        TotalMoment = unconstrainedF_rb[4:7] + Fc_rb[4:7]
+end
 
-        # xdot = xb[8:10]
-        xdot[14*k+1:14*k+3] = X[14*k+8:14*k+10]#xb[8:10]
-        xdot[14*k+4:14*k+7] = X[14*k+11:14*k+14]
-        xdot[14*k+8:14*k+10] = TotalForce/j[k].RB2.m
-        E = genE(X[14*k+4:14*k+7])
-        xdot[14*k+11:14*k+14] = 1/4*transpose(E)*j[k].RB2.invJ*E*TotalMoment
-        # xdot[14*k+1:14*(k+1)] = rbDyn(xb,unconstrF[:,j[k].RB2.bodyID], constrF[:,j[k].RB2.bodyID],j[k].RB2)
+function getXU_0(j::Tuple{Vararg{Joint}})
+    X0 = Vector{Float64}(j[1].RB1.x)
+    for k = 1:length(j)
+        append!(X0,j[k].RB2.x)
     end
 
-    # return unconstrF, constrF, xdot
-    return xdot
+    extFListCopy = externalFTotal(0.0,j); # Generates all the external forces explicitly specified, through joint actions or directly.
+
+    U0 = genU(extFListCopy) # Construct an input matrix from external forces and torques supplied.
+
+    return X0, U0
 end
 
 function checkRevJoint(solQuad::solSim, solProp1::solSim, rjCube1::Array{Float64}, rjProp1::Array{Float64})
-    ## Function that outputs relevant quantities constrained under a revolute joint
+    ## Function that outputs relevant quantities constrained under a rotational joint
     tLen = size(solQuad.r,1)
     ωCube = Matrix{Float64}(undef,tLen,3);
     ωProp1 = Matrix{Float64}(undef,tLen,3);
@@ -230,3 +212,23 @@ function checkRevJoint(solQuad::solSim, solProp1::solSim, rjCube1::Array{Float64
     end
     return ωCube, ωProp1, ωRel, jointLoc1
 end
+
+function checkRevJointIn(solPend1::solSim, rj2::Array{Float64})
+    ## Function that outputs relevant quantities constrained under a rotational joint when first body is inertial frame
+    tLen = size(solPend1.r,1)
+    jointLoc1 = Matrix{Float64}(undef,tLen,3)
+    ωSol = Matrix{Float64}(undef,tLen,3)
+    for i=1:tLen
+        R1.dcm = quat2dcm(solPend1.β[i,:])
+        ωSol[i,:] = angVel(solPend1.β[i,:],solPend1.βdot[i,:])
+        jointLoc1[i,:] = solPend1.r[i,:] + transpose(R1.dcm)*rj2
+    end
+    return ωSol, jointLoc1
+end
+
+# function trim(xFull::Vector{T}, j::Tuple{Vararg{Joint}}) where T<:Real
+#     nB = length(j) + 1; # Number of bodies
+#     x = xFull[1:14*nB];
+#     u = reshape(xFull[14*nB+1:end],(6,nB))
+#
+# end

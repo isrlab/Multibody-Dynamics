@@ -9,23 +9,98 @@ using ForwardDiff
 using Revise
 using StaticArrays
 
-function Constraint(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{T}, Matrix{T}} where T<:Real
+# function Constraint(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{T}, Matrix{T}} where T<:Real
+#
+#     Fc, Ffinal = FcFn(x, j, extFList, GravityInInertial);
+#
+#     # jb = ForwardDiff.jacobian(z -> FcFn([x[1:14];z], j, extFList, GravityInInertial)[1],x[15:end])
+#     # println("jb(Fc) = ", jb)
+#     # sleep(1000);
+#
+#     # Partition generated ForceConstr for each rigid body.
+#     ForceConstr = zeros(T,(7,length(j)+1))
+#     for i=1:length(j)
+#         k = j[i].RB2.bodyID
+#         ForceConstr[:,k] = Fc[7*(k-2)+1:7*(k-1)]
+#     end
+#
+#     # Partition generated Ffinal (unconstrainedF) for each rigid body.
+#     unconstrF = zeros(T,(7,length(j)+1))
+#     for i=1:length(j)
+#         k = j[i].RB2.bodyID
+#         unconstrF[:,k] = Ffinal[7*(k-2)+1:7*(k-1)]
+#     end
+#     # Return unconstrF, ForceConstr.
+#     return (unconstrF,ForceConstr)
+#
+# end
+#
+# function FcFn(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where T<:Real
+#
+#     Afinal, bfinal = Ab_VecOfMat(x,j);
+#
+#     ## Check Afinal jac
+#     # jb = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[1],x);
+#     # println("jb = ", jb[:,15:end])
+#     # sleep(1000);
+#
+#     ## Check bfinal jac
+#     # jb = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[2],x);
+#     # println("jb(bfinal) = ", jb[:,15:28])
+#     # sleep(1000);
+#
+#     Ffinal = assembleF(x,j,extFList,GravityInInertial)
+#     ## Check Ffinal jac
+#     # jb = ForwardDiff.jacobian(z -> assembleF(z,j,extFList, GravityInInertial),x)
+#     # println("jb = ", jb[:,15:28])
+#     # sleep(1000);
+#
+#     Mfinal, Ms, Ms_inv = M_mat(x,j);
+#     ## Check Mfinal jac
+#     # jb = ForwardDiff.jacobian(z -> M_mat(z,j)[3], x)
+#     # println("jb(Ms_inv) = ", jb[:,15:28])
+#     # sleep(1000);
+#
+#     accUnconstr = Mfinal\Ffinal # Unconstrained Acceleration
+#
+#     if !isreal(Ms) # insignificant imaginary values showing up
+#         M1 = real(Ms)
+#         # println("Imag part magnitude =", norm(imag(Ms)))
+#         M2 = real(Ms_inv)
+#
+#         tempMat = Afinal*M2
+#         tempMat_pinv = tempMat'*((tempMat*tempMat')\I(size(tempMat)[1]));
+#         Fc = Ms*tempMat_pinv*(bfinal - Afinal*accUnconstr);
+#     else
+#         tempMat = Afinal*Ms_inv;
+#         tempMat_pinv = tempMat'*((tempMat*tempMat')\I(size(tempMat)[1]));
+#         Fc = Ms*tempMat_pinv*(bfinal - Afinal*accUnconstr); # using Udwadia's formulation
+#     end
+#     # Fc and Ffinal are in the inertial frame
+# return Fc, Ffinal
+# end
 
-    Fc, Ffinal = FcFn(x, j, extFList, GravityInInertial);
+function Constraint(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}},  GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{Union{T,S}}, Matrix{Union{T,S}}} where {T<:Real, S<:Real}
+
+    Fc, Ffinal = FcFn(x, u, j, GravityInInertial);
 
     # jb = ForwardDiff.jacobian(z -> FcFn([x[1:14];z], j, extFList, GravityInInertial)[1],x[15:end])
     # println("jb(Fc) = ", jb)
     # sleep(1000);
 
     # Partition generated ForceConstr for each rigid body.
-    ForceConstr = zeros(T,(7,length(j)+1))
+    ForceConstr = Matrix{Union{T,S}}(undef,(7,length(j)+1))
+    ForceConstr[:,1] = zeros(7);
+    # ForceConstr = zeros(S,(7,length(j)+1))
     for i=1:length(j)
         k = j[i].RB2.bodyID
         ForceConstr[:,k] = Fc[7*(k-2)+1:7*(k-1)]
     end
 
     # Partition generated Ffinal (unconstrainedF) for each rigid body.
-    unconstrF = zeros(T,(7,length(j)+1))
+    unconstrF = Matrix{Union{T,S}}(undef, (7,length(j)+1));
+    unconstrF[:,1] = zeros(7);
+    # unconstrF = zeros(S,(7,length(j)+1))
     for i=1:length(j)
         k = j[i].RB2.bodyID
         unconstrF[:,k] = Ffinal[7*(k-2)+1:7*(k-1)]
@@ -35,7 +110,7 @@ function Constraint(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extF
 
 end
 
-function FcFn(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where T<:Real
+function FcFn(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where {T<:Real, S<:Real}
 
     Afinal, bfinal = Ab_VecOfMat(x,j);
 
@@ -49,7 +124,7 @@ function FcFn(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}
     # println("jb(bfinal) = ", jb[:,15:28])
     # sleep(1000);
 
-    Ffinal = assembleF(x,j,extFList,GravityInInertial)
+    Ffinal = assembleF(x,u,j,GravityInInertial)
     ## Check Ffinal jac
     # jb = ForwardDiff.jacobian(z -> assembleF(z,j,extFList, GravityInInertial),x)
     # println("jb = ", jb[:,15:28])
@@ -79,6 +154,7 @@ function FcFn(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}
     # Fc and Ffinal are in the inertial frame
 return Fc, Ffinal
 end
+
 
 function Ab_VecOfMat(x::Vector{T}, j::Tuple{Vararg{Joint}})::Tuple{Matrix{T}, Vector{T}} where T<:Real
     nCols = 7*(j[end].RB2.bodyID-1);
@@ -164,18 +240,31 @@ function assembleM(x::Vector{T}, j::Tuple{Vararg{Joint}})::Matrix{T} where T<:Re
     return Mfinal
 end
 
-function assembleF(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+# function assembleF(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+#     maxBodyID = j[end].RB2.bodyID
+#     F = Vector{T}(undef,7*(maxBodyID-1))
+#
+#     for i=1:length(j)
+#         k = j[i].RB2.bodyID - 1
+#         F[7*(k-1)+1:7*k] =
+#         genExtF(x,j[i].RB2,extFList[k+1],GravityInInertial)
+#     end
+#     # jb = ForwardDiff.jacobian(z -> genExtF(z,j[1].RB2,extFList[2], GravityInInertial),x)
+#     # println("jb = ", jb[:,15:28])
+#     # sleep(1000);
+#     return F
+# end
+
+function assembleF(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Union{T,S}} where {T<:Real, S<:Real}
     maxBodyID = j[end].RB2.bodyID
-    F = Vector{T}(undef,7*(maxBodyID-1))
+    F = Vector{Union{T,S}}(undef,7*(maxBodyID-1))
 
     for i=1:length(j)
         k = j[i].RB2.bodyID - 1
         F[7*(k-1)+1:7*k] =
-        genExtF(x,j[i].RB2,extFList[k+1],GravityInInertial)
+        genExtF(x,j[i].RB2,u[:,k+1],GravityInInertial)
     end
-    # jb = ForwardDiff.jacobian(z -> genExtF(z,j[1].RB2,extFList[2], GravityInInertial),x)
-    # println("jb = ", jb[:,15:28])
-    # sleep(1000);
+
     return F
 end
 
@@ -591,7 +680,30 @@ function genMatM(X::Vector{T},b::RigidBody)::Matrix{T} where T<:Real
     return M
 end
 
-function genExtF(X::Vector{T},b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+# function genExtF(X::Vector{T},b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+#     # Function to generate augmented external Force vector for unconstrained system
+#     # External Forces are always in the body frame
+#     b_id = b.bodyID;
+#     β = X[14*(b_id-1)+4:14*(b_id-1)+7]
+#     βdot = X[14*(b_id-1)+11:14*(b_id-1)+14]
+#     dcm = quat2dcm(β)
+#     # b.ω = angVel(β,βdot)
+#     E = genE(β)
+#     Edot = genE(βdot)
+#     TotalMoment = zeros(3)
+#     for i in 1:size(extF.Forces)[1]
+#         TotalMoment = TotalMoment + cross(extF.Positions[i,:],extF.Forces[i,:])
+#     end
+#     TotalMoment = TotalMoment + sum(extF.Torques,dims=1)[:]
+#     Γb = [0.0;TotalMoment] # In the body frame
+#     Γu = 2*transpose(E)*Γb
+#     F = [transpose(dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
+#          Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
+#     return F
+#     # F is a 7x1 vector in the inertial frame
+# end
+
+function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Union{T,S}} where {T<:Real, S<:Real}
     # Function to generate augmented external Force vector for unconstrained system
     # External Forces are always in the body frame
     b_id = b.bodyID;
@@ -601,15 +713,14 @@ function genExtF(X::Vector{T},b::RigidBody,extF::extForces,GravityInInertial::MA
     # b.ω = angVel(β,βdot)
     E = genE(β)
     Edot = genE(βdot)
-    TotalMoment = zeros(3)
-    for i in 1:size(extF.Forces)[1]
-        TotalMoment = TotalMoment + cross(extF.Positions[i,:],extF.Forces[i,:])
-    end
-    TotalMoment = TotalMoment + sum(extF.Torques,dims=1)[:]
+    TotalMoment = U[4:6]
+
     Γb = [0.0;TotalMoment] # In the body frame
     Γu = 2*transpose(E)*Γb
-    F = [transpose(dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
-         Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
+    
+    F = Vector{Union{T,S}}(undef,7)
+    F = [transpose(dcm)*U[1:3] + b.m*GravityInInertial
+          Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
     return F
     # F is a 7x1 vector in the inertial frame
 end
