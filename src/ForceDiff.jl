@@ -9,7 +9,7 @@ using ForwardDiff
 using Revise
 using StaticArrays
 
-# function Constraint(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{T}, Matrix{T}} where T<:Real
+# function Constraint(x::AbstractArray{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
 #
 #     Fc, Ffinal = FcFn(x, j, extFList, GravityInInertial);
 #
@@ -35,7 +35,7 @@ using StaticArrays
 #
 # end
 #
-# function FcFn(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where T<:Real
+# function FcFn(x::AbstractArray{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where T<:Real
 #
 #     Afinal, bfinal = Ab_VecOfMat(x,j);
 #
@@ -80,7 +80,7 @@ using StaticArrays
 # return Fc, Ffinal
 # end
 
-function Constraint(x::Vector{T}, u::Matrix{S}, j::Vector{Joint},  GravityInInertial::Vector{Float64})::Tuple{Matrix{Union{T,S}}, Matrix{Union{T,S}}} where {T<:Real, S<:Real}
+function Constraint(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint},  GravityInInertial::Vector{Float64})::Tuple{AbstractArray{Union{T,S}}, AbstractArray{Union{T,S}}} where {T<:Real, S<:Real}
 
     Fc, Ffinal = FcFn(x, u, j, GravityInInertial);
 
@@ -110,7 +110,7 @@ function Constraint(x::Vector{T}, u::Matrix{S}, j::Vector{Joint},  GravityInIner
 
 end
 
-function FcFn(x::Vector{T}, u::Matrix{S}, j::Vector{Joint}, GravityInInertial::Vector{Float64}) where {T<:Real, S<:Real}
+function FcFn(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint}, GravityInInertial::Vector{Float64}) where {T<:Real, S<:Real}
 
     Afinal, bfinal = Ab_VecOfMat(x,j);
 
@@ -156,7 +156,7 @@ return Fc, Ffinal
 end
 
 
-function Ab_VecOfMat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function Ab_VecOfMat(x::AbstractArray{T}, j::Vector{Joint})::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     nCols = 7*(j[end].RB2.bodyID-1);
     nConstrEqns_j = zeros(Integer,length(j));
     ## Number of constraint equations for each joint in robot
@@ -199,7 +199,7 @@ function Ab_VecOfMat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Vector{T}
     return Afinal, bfinal
 end
 
-function M_mat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Matrix{T}, Matrix{T}} where T<:Real
+function M_mat(x::AbstractArray{T}, j::Vector{Joint})::Tuple{AbstractArray{T}, AbstractArray{T}, AbstractArray{T}} where T<:Real
     Mfinal = assembleM(x,j);
     if typeof(x[1]) == Float64 # eigendecomposition not required for sqrt
         Ms = real(sqrt(Mfinal)) # insignificant imaginary values showing up
@@ -219,7 +219,7 @@ function M_mat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Matrix{T}, Matr
     return Mfinal, Ms, Ms_inv
 end
 
-function assembleM(x::Vector{T}, j::Vector{Joint})::Matrix{T} where T<:Real
+function assembleM(x::AbstractArray{T}, j::Vector{Joint})::AbstractArray{T} where T<:Real
     maxBodyID = j[end].RB2.bodyID
     v = collect(3:maxBodyID)
 
@@ -240,9 +240,9 @@ function assembleM(x::Vector{T}, j::Vector{Joint})::Matrix{T} where T<:Real
     return Mfinal
 end
 
-# function assembleF(x::Vector{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+# function assembleF(x::AbstractArray{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::AbstractArray{T} where T<:Real
 #     maxBodyID = j[end].RB2.bodyID
-#     F = Vector{T}(undef,7*(maxBodyID-1))
+#     F = AbstractArray{T}(undef,7*(maxBodyID-1))
 #
 #     for i=1:length(j)
 #         k = j[i].RB2.bodyID - 1
@@ -255,7 +255,7 @@ end
 #     return F
 # end
 
-function assembleF(x::Vector{T}, u::Matrix{S}, j::Vector{Joint}, GravityInInertial:: Vector{Float64})::Vector{Union{T,S}} where {T<:Real, S<:Real}
+function assembleF(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint}, GravityInInertial:: Vector{Float64})::AbstractArray{Union{T,S}} where {T<:Real, S<:Real}
     maxBodyID = j[end].RB2.bodyID
     F = Vector{Union{T,S}}(undef,7*(maxBodyID-1))
 
@@ -279,12 +279,12 @@ function assembleF(x::Vector{T}, u::Matrix{S}, j::Vector{Joint}, GravityInInerti
     return F
 end
 
-function ForceCon(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceCon(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     if(j.RB1.m == 0.0)
         # Joint to world. Body is connected to the Inertial frame.
         if j.type == "Revolute"
             A,b = ForceConRevIn(x,j)
-            # function tempFn(x::Vector{T}, j::Joint) where T<:Real
+            # function tempFn(x::AbstractArray{T}, j::Joint) where T<:Real
             #     Ar = ForceConRevIn(x,j)[1]
             #     Arp = pinv(Ar)
             #     return Arp
@@ -296,7 +296,7 @@ function ForceCon(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:
             A,b = ForceConRev2In(x,j)
         elseif j.type == "Spherical"
             A,b = ForceConSphIn(x,j)
-            # function tempFn2(x::Vector{T}, j::Joint) where T<:Real
+            # function tempFn2(x::AbstractArray{T}, j::Joint) where T<:Real
             #     Ar = ForceConSphIn(x,j)[1]
             #     Arp = pinv(Ar)
             #     return Arp
@@ -330,7 +330,7 @@ function ForceCon(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:
 end
 
 # For inertial frame and body
-function ForceFreeIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceFreeIn(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated due to quaternion constraint
     b2 = j.RB2
 
@@ -343,7 +343,7 @@ function ForceFreeIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where 
 
 end
 
-function ForceConRevIn(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
+function ForceConRevIn(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real#, extF2::extForces, GravityInInertial::Vector{Float64})::Vector{Float64}
     # Constraint Force generated by revolute joint
     b2 = j.RB2
 
@@ -360,7 +360,7 @@ function ForceConRevIn(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where
     return (A,b)
 end
 
-function ForceConRev2In(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConRev2In(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by 2revolute joint
 
     # Revolute Joint has 5 constraints (wrt inertial frame)
@@ -375,7 +375,7 @@ function ForceConRev2In(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} whe
     return (A,b)
 end
 
-function ForceConWeldAllIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConWeldAllIn(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by weld joint
 
     # Weld Joint has 7 constraints
@@ -391,7 +391,7 @@ function ForceConWeldAllIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} 
     return (A,b)
 end
 
-function ForceConSphIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConSphIn(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by spherical joint
 
     # Spherical Joint leaves 3 degrees of freedom (remove 4 constraints)
@@ -406,14 +406,14 @@ function ForceConSphIn(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} wher
 end
 
 # For 2 rigid bodies, no inertial frame
-function ForceFree(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceFree(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated due to quaternion constraint
     A,b = QuatNormConstraint(j);
     return (A,b)
 end
 
 
-function ForceConRev(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConRev(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by revolute joint
     # Revolute Joint imposes 7 constraints between two rigid bodies - 3 translational, 2 rotational, 2 quat norm
     # Resultant dof of the two bodies: 7
@@ -426,7 +426,7 @@ function ForceConRev(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where 
     return (A,b)
 end
 
-function ForceConRev2(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConRev2(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by revolute2 joint
     # Revolute Joint2 has 6 constraints - 3 translational, 2 quat norm, 1 rotational
     A = zeros(T,(6,14)); b = zeros(T,6);
@@ -437,7 +437,7 @@ function ForceConRev2(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where
     return (A,b)
 end
 
-function ForceConWeldAll(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConWeldAll(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by weld joint
     # Weld Joint has 8 constraints
     A = zeros(T,(8,14)); b = zeros(T,8);
@@ -448,7 +448,7 @@ function ForceConWeldAll(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} wh
     return (A,b)
 end
 
-function ForceConSpr(x::Vector{T}, j::Joint) where T<:Real
+function ForceConSpr(x::AbstractArray{T}, j::Joint) where T<:Real
     b1_id = j.RB1.bodyID; b2_id = j.RB2.bodyID;
     x1 = x[(b1_id-1)*14+1:b1_id*14]
     x2 = x[(b2_id-1)*14+1:b2_id*14]
@@ -478,7 +478,7 @@ function ForceConSpr(x::Vector{T}, j::Joint) where T<:Real
     return (F_b1, F_b2)
 end
 
-function ForceConSph(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function ForceConSph(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Constraint Force generated by spherical joint
     # Spherical Joint has 5 constraints (3 translational, 2 quat norm)
     A = zeros(T,(5,14)); b = zeros(T,5)
@@ -488,7 +488,7 @@ function ForceConSph(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where 
     return (A,b)
 end
 
-function TranslationConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function TranslationConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     b1_id = j.RB1.bodyID; b2_id = j.RB2.bodyID;
     x1 = x[(b1_id-1)*14+1:b1_id*14]
     x2 = x[(b2_id-1)*14+1:b2_id*14]
@@ -511,12 +511,12 @@ function TranslationConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T
 
 end
 
-function TranslationConstraintSupplement(x::Vector{T},pos::Vector{Float64}) where T <: Real
+function TranslationConstraintSupplement(x::AbstractArray{T},pos::Vector{Float64}) where T <: Real
     # To constrain joint wrt body's cm
     β = x[4:7]
     βdot = x[11:14]
 
-    r(y::Vector{T}) where T<:Real = transpose(quat2dcm(y))*pos
+    r(y::AbstractArray{T}) where T<:Real = transpose(quat2dcm(y))*pos
     rJac = z->ForwardDiff.jacobian(r,z)
 
     rdot = y->ForwardDiff.jacobian(r,y)*βdot
@@ -526,7 +526,7 @@ function TranslationConstraintSupplement(x::Vector{T},pos::Vector{Float64}) wher
     return (rddotLHS,rddotRHS)
 end
 
-function QuatNormConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function QuatNormConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     A = zeros(T,(2,14))
     b = zeros(T,2)
 
@@ -548,7 +548,7 @@ function QuatNormConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} 
 end
 
 
-function RevJointConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function RevJointConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Attempting relative angular ω between bodies in body 1 frame only has component about the joint axis
     b1 = j.RB1
     b2 = j.RB2
@@ -560,7 +560,7 @@ function RevJointConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} 
     β2dot = x[14*(b2_id-1)+11:14*(b2_id-1)+14]
     axis = j.axis
     βaug = [β1;β1dot;β2;β2dot]
-    function f(y::Vector{T}) where T <: Real
+    function f(y::AbstractArray{T}) where T <: Real
         y1  = y[1:4]; y1dot = y[5:8]#β1; β1dot
         y2 = y[9:12]; y2dot = y[13:16] #β2;β2dot
         ωb2 = angVel(y2,y2dot)
@@ -583,7 +583,7 @@ function RevJointConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} 
     b[1] = bx[zAxis[1]]
     b[2] = bx[zAxis[2]]
 
-    # function fTemp(X::Vector{T},j::Joint) where T <: Real
+    # function fTemp(X::AbstractArray{T},j::Joint) where T <: Real
     #     b1 = j.RB1
     #     b2 = j.RB2
     #     b1_id = b1.bodyID;
@@ -621,7 +621,7 @@ function RevJointConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} 
 
 end
 
-function RevJoint2Constraint(j::Joint)::Tuple{Matrix{Float64}, Vector{Float64}} where T<:Real
+function RevJoint2Constraint(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     b1 = j.RB1
     b2 = j.RB2
 
@@ -634,8 +634,8 @@ function RevJoint2Constraint(j::Joint)::Tuple{Matrix{Float64}, Vector{Float64}} 
     return (A,b)
 end
 
-function RevJoint2ConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <: Real
-    function f(y::Vector{T}) where T <: Real
+function RevJoint2ConstraintSupplement(x1::AbstractArray{T},x2::AbstractArray{T}) where T <: Real
+    function f(y::AbstractArray{T}) where T <: Real
         # Computes the Hamilton product of β2 and β1^-1 (i.e. β2*β1^-1))
         # Let Q be the product.
         # (Q(1) + Q(2))^2 + (Q(0) + Q(3))^2 = 1.
@@ -676,7 +676,7 @@ function RevJoint2ConstraintSupplement(x1::Vector{T},x2::Vector{T}) where T <: R
 
 end
 
-function WeldJointAllConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function WeldJointAllConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     # Attempting relative angular ω between bodies in body 1 frame is zero
     b1 = j.RB1
     b2 = j.RB2
@@ -686,7 +686,7 @@ function WeldJointAllConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{
     β2dot = b2.x[11:14]
     axis = j.axis
     βaug = [β1;β1dot;β2;β2dot]
-    function f(y::Vector{T}) where T <: Real
+    function f(y::AbstractArray{T}) where T <: Real
         y1  = y[1:4]; y1dot = y[5:8]#β1
         y2 = y[9:12]; y2dot = y[13:16] #β2;β2dot
         ωb2 = angVel(y2,y2dot)
@@ -705,7 +705,7 @@ function WeldJointAllConstraint(x::Vector{T},j::Joint)::Tuple{Matrix{T}, Vector{
     return (Ax,bx)
 end
 
-function genMatM(X::Vector{T},b::RigidBody)::Matrix{T} where T<:Real
+function genMatM(X::AbstractArray{T},b::RigidBody)::AbstractArray{T} where T<:Real
     # Function to generate mass matrix for each rigid body
     # T <: Real
     b_id = b.bodyID;
@@ -717,7 +717,7 @@ function genMatM(X::Vector{T},b::RigidBody)::Matrix{T} where T<:Real
     return M
 end
 
-# function genExtF(X::Vector{T},b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{T} where T<:Real
+# function genExtF(X::AbstractArray{T},b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::AbstractArray{T} where T<:Real
 #     # Function to generate augmented external Force vector for unconstrained system
 #     # External Forces are always in the body frame
 #     b_id = b.bodyID;
@@ -740,7 +740,7 @@ end
 #     # F is a 7x1 vector in the inertial frame
 # end
 
-function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::Vector{Float64})::Vector{Union{T,S}} where {T<:Real, S<:Real}
+function genExtF(X::AbstractArray{T},b::RigidBody,U::AbstractArray{S},GravityInInertial::Vector{Float64})::AbstractArray{Union{T,S}} where {T<:Real, S<:Real}
     # Function to generate augmented external Force vector for unconstrained system
     # External Forces are always in the body frame
     b_id = b.bodyID;
@@ -763,7 +763,7 @@ function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::Vecto
 end
 
 ##
-function unique_ids(A::Array{T,2}) where T<:Real
+function unique_ids(A::AbstractArray{T,2}) where T<:Real
     # Function to remove the redundant rows in constraint matrix A that repeat the quaternion norm constraint for a body connected by multiple joints
 
     A_unq = unique(A,dims=1); #after removing duplicate rows from A
@@ -778,3 +778,6 @@ function unique_ids(A::Array{T,2}) where T<:Real
     end
     return A_unq, inds
 end
+
+##
+# trying StaticVector
