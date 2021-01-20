@@ -49,6 +49,44 @@ mutable struct Joint
         return this
     end
 end
-#
-JointDict = Dict(["Revolute"=>7, "Revolute2"=>6, "Spherical" => 5, "Weld"=>9, "Free" => 2]);
-JointDictIn = Dict(["Revolute"=>6, "Revolute2"=>5, "Spherical" => 4, "Weld"=>8, "Free" => 1]);
+
+# Number of constraint equations for all kinds of joints
+JointDict = Dict(["Revolute"=>7, "Revolute2"=>6, "Spherical" => 5, "Weld"=>9, "Spring" => 2, "Free" => 2]);
+JointDictIn = Dict(["Revolute"=>6, "Revolute2"=>5, "Spherical" => 4, "Weld"=>8 , "Spring" => 1, "Free" => 1]); # When the first body is the inertial frame
+
+function body_in_jointVec(jVec::Vector{Joint}, b_id::Int64)
+# returns the joint id which contains b_id in the vector of joints
+    # j = 0;
+    # j_i = 0;
+    RB = InertialFrameAsRB();
+    for i=1:length(jVec)
+        if (b_id == jVec[i].RB1.bodyID)
+            # j_i = i;
+            RB = jVec[i].RB1;
+            break;
+        elseif (b_id ==  jVec[i].RB2.bodyID)
+            # j_i = i;
+            # j = 2;
+            RB = jVec[i].RB2;
+            break;
+        else continue;
+        end
+    end
+    return RB;
+    # j_i is the position of the first joint in the vector that contains corresponding body
+    # j is either 1 or 2, i.e., which body of the corresponding joint
+end
+
+function filterInertialJoint!(jVec::Vector{Joint})
+    # Remove the inertial body/frame occurring twice in a joint tree
+    for i=2:length(jVec)
+        if (jVec[i].RB1.m == 0 || jVec[i].RB2.m == 0)
+            deleteat!(jVec,i);
+            break;
+        end
+        # RB1 = jVec[i].RB1; RB2 = jVec[i].RB2;
+        # for j=1:length(jVec)
+        #
+        # end
+    end
+end
