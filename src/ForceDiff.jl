@@ -583,40 +583,6 @@ function RevJointConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArray{T
     b[1] = bx[zAxis[1]]
     b[2] = bx[zAxis[2]]
 
-    # function fTemp(X::AbstractArray{T},j::Joint) where T <: Real
-    #     b1 = j.RB1
-    #     b2 = j.RB2
-    #     b1_id = b1.bodyID;
-    #     b2_id = b2.bodyID;
-    #     y1 = X[14*(b1_id-1)+4:14*(b1_id-1)+7]
-    #     y2 = X[14*(b2_id-1)+4:14*(b2_id-1)+7]
-    #     y1dot = X[14*(b1_id-1)+11:14*(b1_id-1)+14]
-    #     y2dot = X[14*(b2_id-1)+11:14*(b2_id-1)+14]
-    #     ωb2 = angVel(y2,y2dot)
-    #     ωb1 = angVel(y1,y1dot)
-    #     ωb2inb1 = quat2dcm(y1)*transpose(quat2dcm(y2))*ωb2
-    #     relAngVel = ωb2inb1 - ωb1
-    #     return relAngVel
-    # end
-    # fJac = ForwardDiff.jacobian(z->fTemp(z,j),x)
-    #
-    # Ax = zeros(T,(3,14)); bx = zeros(T,3)
-    # Ax[:,4:7] = fJac[:,14*(b1_id-1)+11:14*(b1_id-1)+14]
-    # Ax[:,11:14] = fJac[:,14*(b2_id-1)+11:14*(b2_id-1)+14]
-    # bx = -fJac[:,14*(b1_id-1)+4:14*(b1_id-1)+7]*β1dot - fJac[:,14*(b2_id-1)+4:14*(b2_id-1)+7]*β2dot
-    #
-    # # return Ax,bx
-    #
-    # zAxis = findall(iszero,axis)
-    # A = zeros(T,(2,14)); b = zeros(T,2)
-    #
-    # # A = Ax[zAxis,:]; b = bx[zAxis]
-    #
-    # A[1,:] = Ax[zAxis[1],:]
-    # A[2,:] = Ax[zAxis[2],:]
-    # b[1] = bx[zAxis[1]]
-    # b[2] = bx[zAxis[2]]
-
     return (A,b)
 
 end
@@ -624,10 +590,14 @@ end
 function RevJoint2Constraint(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
     b1 = j.RB1
     b2 = j.RB2
+    b1_id = b1.bodyID;
+    b2_id = b2.bodyID;
+    x1 = x[14*(b1_id-1)+1:14*(b1_id-1)+14];
+    x2 = x[14*(b2_id-1)+1:14*(b2_id-1)+14];
 
-    A = zeros(1,14)
-    b = 0.0
-    y = RevJoint2ConstraintSupplement(b1.x,b2.x)
+    A = zeros(T,(1,14));
+    b = T(0.0)
+    y = RevJoint2ConstraintSupplement(x1,x2)
     A[:,4:7] = y[1][1]
     A[:,11:14] = y[1][2]
     b = y[2][1]
@@ -656,11 +626,6 @@ function RevJoint2ConstraintSupplement(x1::AbstractArray{T},x2::AbstractArray{T}
     β2dot = x2[11:14]
     β = [β1;β2]
 
-    β1 = [1.0;zeros(3)];
-    β2 = deepcopy(β1);
-    β = [β1;β2]
-
-
     y1 = f(β)
     y2 = fGrad(β)
     y3 = fdotJac(β)
@@ -680,10 +645,14 @@ function WeldJointAllConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArr
     # Attempting relative angular ω between bodies in body 1 frame is zero
     b1 = j.RB1
     b2 = j.RB2
-    β1 = b1.x[4:7]
-    β2 = b2.x[4:7]
-    β1dot = b1.x[11:14]
-    β2dot = b2.x[11:14]
+    b1_id = b1.bodyID;
+    b2_id = b2.bodyID;
+    x1 = x[14*(b1_id-1)+1:14*(b1_id-1)+14];
+    x2 = x[14*(b2_id-1)+1:14*(b2_id-1)+14];
+    β1 = x1[4:7]
+    β2 = x2[4:7]
+    β1dot = x1[11:14]
+    β2dot = x2[11:14]
     axis = j.axis
     βaug = [β1;β1dot;β2;β2dot]
     function f(y::AbstractArray{T}) where T <: Real
@@ -697,7 +666,7 @@ function WeldJointAllConstraint(x::AbstractArray{T},j::Joint)::Tuple{AbstractArr
     end
     fJac = z->ForwardDiff.jacobian(f,z)
 
-    Ax = zeros(3,14); bx = zeros(3)
+    Ax = zeros(T,(3,14)); bx = zeros(T,3)
     Ax[:,4:7] = fJac(βaug)[:,5:8]
     Ax[:,11:14] = fJac(βaug)[:,13:16]
     bx = -fJac(βaug)[:,1:4]*β1dot - fJac(βaug)[:,9:12]*β2dot
