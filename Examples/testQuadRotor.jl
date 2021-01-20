@@ -1,7 +1,7 @@
 # To test a simplified quadrotor.
 
 include("../src/plotSol.jl")
-include("../src/simulate.jl")
+include("../src/simulateDiff.jl")
 include("../src/OrientationConversion.jl")
 ##
 clearconsole()
@@ -54,11 +54,19 @@ j3 = Joint(QuadCube,Prop2,rjCube2,rjProp,type = "Revolute",axis = axis);
 j4 = Joint(QuadCube,Prop3,rjCube3,rjProp,type = "Revolute",axis = axis);
 j5 = Joint(QuadCube,Prop4,rjCube4,rjProp,type = "Revolute",axis = axis);
 
+j = (j1,j2,j3,j4,j5);
+## Linearization
+x0, u0 = getXU_0(j);
+A,B = linearizeDiff(x0, u0, j);
+println("A = ",A)
+println("B = ",B)
+sleep(1200)
+
 ## Simulation
 tEnd = 0.1;
 tSpan = 0.01;
-g = MVector{3}([0.0,0.0,0.0]) # Gravity Vector.
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,j3,j4,j5,g=g);
+g = MVector{3, Real}([0.0,0.0,0.0]) # Gravity Vector.
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g);
 
 solQuad = solFinal[1];
 solProp1 = solFinal[2];
@@ -100,16 +108,19 @@ plotPos(tSim,jointLoc2);
 # plotQuatDot(tSim, solQuad.βdot)
 ##
 # close("all");
-plotPos(tSim, solQuad.r, "Quad");
-# plotQuat(tSim, solQuad.β)
-# plotQuatDot(tSim, solQuad.βdot)
-# plotErrNorm(tSim, solQuad.β)
-plotPos(tSim, solProp1.r, "Prop1");
-# plotVel(tSim, solProp1.v, "Prop1");
-plotPos(tSim, solProp2.r, "Prop2");
-plotPos(tSim, solProp3.r, "Prop3");
-plotPos(tSim, solProp4.r, "Prop4");
-
+# plotPos(tSim, solQuad.r, "Quad");
+# # plotQuat(tSim, solQuad.β)
+# # plotQuatDot(tSim, solQuad.βdot)
+# # plotErrNorm(tSim, solQuad.β)
+# plotPos(tSim, solProp1.r, "Prop1");
+# # plotVel(tSim, solProp1.v, "Prop1");
+# plotPos(tSim, solProp2.r, "Prop2");
+# plotPos(tSim, solProp3.r, "Prop3");
+# plotPos(tSim, solProp4.r, "Prop4");
+##
+plotAngVel(tSim, ωCube)
+plotAngVel(tSim, ωProp1)
+plotAngVel(tSim, ωProp3)
 
 # using JLD
 # save("Quad50s.jld","tSim",tSim,"solFinal", solFinal)
@@ -137,3 +148,5 @@ plotPos(tSim, solProp4.r, "Prop4");
 # end
 # plot(tSim[2:end],errAxisNorm[2:end])
 # plotPos(tSim,errAxis)
+
+##

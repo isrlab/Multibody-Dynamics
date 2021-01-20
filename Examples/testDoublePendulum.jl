@@ -1,6 +1,6 @@
 # include("../src/plotSol.jl")
 include("../src/plotSol.jl")
-include("../src/simulate.jl")
+include("../src/simulateDiff.jl")
 include("../src/OrientationConversion.jl")
 using Revise
 using JLD
@@ -35,12 +35,15 @@ j1 = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axisY)
 j2 = Joint(R1,R2,rj3,rj4,type="Revolute",axis=axisY)
 
 # External Forces Definition
-g = MVector{3}([0.0,0.0,-9.806]) # Gravity Vector.
+g = [0.0,0.0,-9.806]; # Gravity Vector.
 
+j = [j1;j2];
 ## Simulation
 tEnd = 1.0
-tSpan = 0.01
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)
+tSpan = 0.01;
+@btime simulateDiff(tEnd, tInt, j, g=g);
+sleep(1000);
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
 
 solPend1  = solFinal[1]
 solPend2  = solFinal[2]

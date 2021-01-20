@@ -3,7 +3,7 @@
 # as another rigid body with a revolute joint between the two.
 
 include("../src/plotSol.jl")
-include("../src/simulate.jl")
+include("../src/simulateDiff.jl")
 include("../src/OrientationConversion.jl")
 ##
 clearconsole()
@@ -34,16 +34,23 @@ rjCube = [0.0 0.0 0.5][:]
 rjProp = [0.0 0.0 0.0][:]
 
 j1 = Joint(InFrame,QuadCube,zeros(3),zeros(3))
-j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Revolute",axis = axis)#,jointTorque = [0.0;0.0;0.0001])
+j2 = Joint(QuadCube,Props,rjCube,rjProp,type = "Revolute",axis = axis);#,jointTorque = [0.0;0.0;0.0001])
 
-# External Forces Definition
-# const g = [0.0;0.0;0.0]
+j = [j1,j2];
 
+## Linearization
+# x0, u0 = getXU_0(j);
+# A,B = linearizeDiff(x0, u0, j);
+# println("A = ",A)
+# println("B = ",B)
+# sleep(1200)
 ## Simulation
-tEnd = 0.1
+tEnd = 0.01
 tSpan = 0.01
-g = MVector{3}([0.0,0.0,0.0]) # Gravity Vector.
-tSim, solFinal = simulate(tEnd,tSpan,j1,j2,g=g)
+g = [0.0,0.0,0.0]; # Gravity Vector.
+@btime simulateDiff(tEnd, tInt, j, g=g);
+sleep(1000);
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
 
 solQuad = solFinal[1]
 solProp = solFinal[2]
