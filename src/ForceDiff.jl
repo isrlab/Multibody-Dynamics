@@ -80,7 +80,7 @@ using StaticArrays
 # return Fc, Ffinal
 # end
 
-function Constraint(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}},  GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{Matrix{Union{T,S}}, Matrix{Union{T,S}}} where {T<:Real, S<:Real}
+function Constraint(x::Vector{T}, u::Matrix{S}, j::Vector{Joint},  GravityInInertial::Vector{Float64})::Tuple{Matrix{Union{T,S}}, Matrix{Union{T,S}}} where {T<:Real, S<:Real}
 
     Fc, Ffinal = FcFn(x, u, j, GravityInInertial);
 
@@ -110,7 +110,7 @@ function Constraint(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}},  Gravit
 
 end
 
-function FcFn(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where {T<:Real, S<:Real}
+function FcFn(x::Vector{T}, u::Matrix{S}, j::Vector{Joint}, GravityInInertial::Vector{Float64}) where {T<:Real, S<:Real}
 
     Afinal, bfinal = Ab_VecOfMat(x,j);
 
@@ -156,7 +156,7 @@ return Fc, Ffinal
 end
 
 
-function Ab_VecOfMat(x::Vector{T}, j::Tuple{Vararg{Joint}})::Tuple{Matrix{T}, Vector{T}} where T<:Real
+function Ab_VecOfMat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Vector{T}} where T<:Real
     nCols = 7*(j[end].RB2.bodyID-1);
     nConstrEqns_j = zeros(Integer,length(j));
     ## Number of constraint equations for each joint in robot
@@ -199,7 +199,7 @@ function Ab_VecOfMat(x::Vector{T}, j::Tuple{Vararg{Joint}})::Tuple{Matrix{T}, Ve
     return Afinal, bfinal
 end
 
-function M_mat(x::Vector{T}, j::Tuple{Vararg{Joint}})::Tuple{Matrix{T}, Matrix{T}, Matrix{T}} where T<:Real
+function M_mat(x::Vector{T}, j::Vector{Joint})::Tuple{Matrix{T}, Matrix{T}, Matrix{T}} where T<:Real
     Mfinal = assembleM(x,j);
     if typeof(x[1]) == Float64 # eigendecomposition not required for sqrt
         Ms = real(sqrt(Mfinal)) # insignificant imaginary values showing up
@@ -219,7 +219,7 @@ function M_mat(x::Vector{T}, j::Tuple{Vararg{Joint}})::Tuple{Matrix{T}, Matrix{T
     return Mfinal, Ms, Ms_inv
 end
 
-function assembleM(x::Vector{T}, j::Tuple{Vararg{Joint}})::Matrix{T} where T<:Real
+function assembleM(x::Vector{T}, j::Vector{Joint})::Matrix{T} where T<:Real
     maxBodyID = j[end].RB2.bodyID
     v = collect(3:maxBodyID)
 
@@ -255,7 +255,7 @@ end
 #     return F
 # end
 
-function assembleF(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Union{T,S}} where {T<:Real, S<:Real}
+function assembleF(x::Vector{T}, u::Matrix{S}, j::Vector{Joint}, GravityInInertial:: Vector{Float64})::Vector{Union{T,S}} where {T<:Real, S<:Real}
     maxBodyID = j[end].RB2.bodyID
     F = Vector{Union{T,S}}(undef,7*(maxBodyID-1))
 
@@ -263,8 +263,19 @@ function assembleF(x::Vector{T}, u::Matrix{S}, j::Tuple{Vararg{Joint}}, GravityI
         k = j[i].RB2.bodyID - 1
         F[7*(k-1)+1:7*k] =
         genExtF(x,j[i].RB2,u[:,k+1],GravityInInertial)
-    end
 
+        if j[i].type == "Spring"
+            F_b1, F_b2 = ForceConSpr(x,j[i]); # Forces acting on the bodies connected by the spring. Note that a spring does not constrain 2 bodies any more than they previously were, i.e., degrees of freedom remain the same.
+
+            b1_id = j[i].RB1.bodyID -1; b2_id = j[i].RB2.bodyID - 1;
+            if j[i].RB1.m == 0.0 # First body is the inertial frame
+                F[7*(b2_id-1)+1:7*b2_id] += F_b2;
+            else # First body is not the inertial frame
+                F[7*(b1_id-1)+1:7*b1_id] += F_b1;
+                F[7*(b2_id-1)+1:7*b2_id] += F_b2;
+            end
+        end
+    end
     return F
 end
 
@@ -295,10 +306,8 @@ function ForceCon(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:
             # sleep(1000);
         elseif j.type == "Weld"
             A,b = ForceConWeldAllIn(x,j)
-        elseif j.type == "Free"
+        elseif j.type == "Free" || j.type == "Spring"
             A,b = ForceFreeIn(x,j)
-        elseif j.type == "Spring"
-            A,b = ForceConSprIn(x,j)
         else
             error("Joint type not prescribed.")
         end
@@ -311,10 +320,8 @@ function ForceCon(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:
             A,b = ForceConSph(x,j)
         elseif j.type == "Weld"
             A,b = ForceConWeldAll(x,j)
-        elseif j.type == "Free"
+        elseif j.type == "Free" || j.type == "Spring"
             A,b = ForceFree(x,j)
-        elseif j.type == "Spring"
-            A,b = ForceConSpr(x,j)
         else
             error("Joint type not prescribed.")
         end
@@ -439,6 +446,36 @@ function ForceConWeldAll(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} wh
     A[6:end,:], b[6:end] = WeldJointAllConstraint(j)
 
     return (A,b)
+end
+
+function ForceConSpr(x::Vector{T}, j::Joint) where T<:Real
+    b1_id = j.RB1.bodyID; b2_id = j.RB2.bodyID;
+    x1 = x[(b1_id-1)*14+1:b1_id*14]
+    x2 = x[(b2_id-1)*14+1:b2_id*14]
+    β1 = x1[4:7]; β2 = x2[4:7]
+    b1_dcm = quat2dcm(β1); b2_dcm = quat2dcm(β2);
+
+    # To compute Spring force and torque
+    posSpr1 = x1[1:3] + transpose(b1_dcm)*j.pos1 # Inertial position of spring connection on first body
+    posSpr2 = x2[1:3] + transpose(b2_dcm)*j.pos2 # Inertial position of spring connection on second body
+    unitVec = (posSpr2 - posSpr1)/norm(posSpr2-posSpr1,2) # unit Vector in direction of spring (first body to second body)
+
+    # First body
+    E1 = genE(β1)
+    F1 = j.k*(norm(posSpr1-posSpr2)-j.restLen)*unitVec # Force exerted by spring on the first body (inertial frame)
+    τ1 = cross(transpose(b1_dcm)*j.pos1,F1) # Torque exerted by spring on the first body (inertial frame)
+    Γb1 = [0.0;b1_dcm*τ1] #(body frame)
+    Γu1 = 2*transpose(E1)*Γb1 # generalized torque vector
+
+    # Second body
+    E2 = genE(β2)
+    F2 = -F1 # Force exerted by spring on second body
+    τ2 = cross(transpose(b2_dcm)*j.pos2,F2) # Torque exerted by spring on second body
+    Γb2 = [0.0;b2_dcm*τ2]
+    Γu2 = 2*transpose(E2)*Γb2
+
+    F_b1 = [F1; Γu1]; F_b2 = [F2; Γu2];
+    return (F_b1, F_b2)
 end
 
 function ForceConSph(x::Vector{T}, j::Joint)::Tuple{Matrix{T}, Vector{T}} where T<:Real
@@ -703,7 +740,7 @@ end
 #     # F is a 7x1 vector in the inertial frame
 # end
 
-function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::MArray{Tuple{3},Real,1,3})::Vector{Union{T,S}} where {T<:Real, S<:Real}
+function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::Vector{Float64})::Vector{Union{T,S}} where {T<:Real, S<:Real}
     # Function to generate augmented external Force vector for unconstrained system
     # External Forces are always in the body frame
     b_id = b.bodyID;
@@ -717,7 +754,7 @@ function genExtF(X::Vector{T},b::RigidBody,U::Vector{S},GravityInInertial::MArra
 
     Γb = [0.0;TotalMoment] # In the body frame
     Γu = 2*transpose(E)*Γb
-    
+
     F = Vector{Union{T,S}}(undef,7)
     F = [transpose(dcm)*U[1:3] + b.m*GravityInInertial
           Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
@@ -727,6 +764,8 @@ end
 
 ##
 function unique_ids(A::Array{T,2}) where T<:Real
+    # Function to remove the redundant rows in constraint matrix A that repeat the quaternion norm constraint for a body connected by multiple joints
+
     A_unq = unique(A,dims=1); #after removing duplicate rows from A
     inds = Int64[]; # indices of non unique rows
     for i=1:size(A_unq,1)
@@ -739,16 +778,3 @@ function unique_ids(A::Array{T,2}) where T<:Real
     end
     return A_unq, inds
 end
-
-##
-# function pinvM(x::Vector{T}) where T<:Real
-#     M = diagm(x);
-#     A  = diagm(x.^2);
-#     Q = pinv(A*M^(-0.5))
-#     return Q
-#     # return (sqrt(M))
-# end
-# # # # x = Array{Dual,1}(undef,3);
-# x = rand(3)
-# # println(pinvM(x))
-# ForwardDiff.jacobian(z -> pinvM(z),x)

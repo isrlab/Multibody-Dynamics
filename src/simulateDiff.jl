@@ -14,7 +14,7 @@ using Revise
 using DifferentialEquations
 using StaticArrays
 
-global GravityInInertial = MVector{3,Real}([0.0,0.0,-9.806])
+global GravityInInertial = [0.0,0.0,-9.806];
 
 struct solSim
     # Structure to store results of Simulation for each rigid body
@@ -37,8 +37,8 @@ Tolerance of ode solver set. RelTol = 1e-10, AbsTol = 1e-10. \\
 Tsit5() solver used. \\
 Returns a tuple containing tSim and vector of solutions in solSim form.
 """
-function simulateDiff(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
-                  g::MArray{Tuple{3},Real,1,3}=[0.0;0.0;-9.806]) where T<:Real#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
+function simulateDiff(tEnd::Float64,tInt::Float64,j::Vector{Joint};
+                  g::Vector{Float64}=[0.0;0.0;-9.806]);# where T<:Real#,extFVec::Vector{extForces}=Vector{extForces}(undef,1))
     # Ellipsis (...) to facilitate supplying variable number of arguments to the function
     # Initial condition (all bodies connected)
     global GravityInInertial = g
@@ -52,10 +52,10 @@ function simulateDiff(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
     # Declaring the ODE Problem as per DifferentialEquations convention
     tSpanODE = (0.0, tEnd);
 
-    prob = ODEProblem(mainDynODEDiff,X0,tSpanODE,j)
+    prob = ODEProblem(mainDynODEDiff!,X0,tSpanODE,j)
     # sol = solve(prob, saveat = tSpan, RK4(), reltol=1e-10, abstol=1e-10)
     # sol = solve(prob, Tsit5(), reltol=1e-10, abstol=1e-10)#, saveat = 0:tSpan:tEnd)
-    sol = solve(prob, DP5(), reltol=1e-10, abstol=1e-10)
+    sol = solve(prob, DP5(), saveat=tInt, reltol=1e-10, abstol=1e-10)
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)
@@ -68,19 +68,11 @@ function simulateDiff(tEnd::Float64,tInt::T,j::Tuple{Vararg{Joint}};
     return (sol.t, solFinal)
 end
 
+function mainDynODEDiff!(dX,X, j::Vector{Joint}, t::Float64)# where T<:Real
+    dX[:] = mainDynODEDiff(X,j,t);
+end
 
-"""
-mainDynODE!(dX,X,j,t) \\
-X:: State vector of system at time t. \\
-j:: Tuple of Joints. (Length not specified.) \\
-
-Generates the constraint forces acting on each rigid body present in the system at time t. \\
-dX = f(X,t)
-"""
-function mainDynODEDiff(X::Vector{T}, j::Tuple{Vararg{Joint}}, t::Float64)::Vector{T} where T<:Real
-
-    # println("\ntypeof(X) = ", typeof(X))
-
+function mainDynODEDiff(X::Vector{T}, j::Vector{Joint}, t::Float64)::Vector{T} where T<:Real
     # ODE function to be used as per DifferentialEquations convention
     # Create extForcesList storing extForces for each rigid body
     # Create ForceConstraints Array storing constraint forces acting on each rigid body
@@ -95,13 +87,22 @@ function mainDynODEDiff(X::Vector{T}, j::Tuple{Vararg{Joint}}, t::Float64)::Vect
 
     U = genU(extFListCopy) # Construct an input matrix from external forces and torques supplied.
 
-    dX = fxdot(X,U,j,GravityInInertial);
+    ## Inplace
+    dX = zeros(length(X));
+    fxdot!(dX, X, U,j,GravityInInertial);
 
-    println("t = $t")
+    ## Not inplace
+    # dX = fxdot(X,U,j,GravityInInertial);
+
+    # println("t = $t")
     return dX
 end
 
-function fxdot(X::Vector{T},U::Matrix{S},j::Tuple{Vararg{Joint}},GravityInInertial::MArray{Tuple{3},Real,1,3}) where {T<:Real,S<:Real}
+function fxdot!(dX, X::Vector{T}, U::Matrix{S}, j::Vector{Joint}, GravityInInertial::Vector{Float64}) where {T<:Real,S<:Real}
+    dX[:] = fxdot(X,U,j,GravityInInertial);
+end
+
+function fxdot(X::Vector{T},U::Matrix{S},j::Vector{Joint},GravityInInertial::Vector{Float64}) where {T<:Real,S<:Real}
     nJ = length(j); # Number of joints
 
     unconstrF, constrF = Constraint(X, U, j, GravityInInertial)
@@ -128,7 +129,7 @@ function fxdot(X::Vector{T},U::Matrix{S},j::Tuple{Vararg{Joint}},GravityInInerti
     return xdot
 end
 
-function externalFTotal(t::T, j::Tuple{Vararg{Joint}})::Vector{extForces} where T<:Real
+function externalFTotal(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # Returns externally applied forces in total, not including gravity. Includes Forces from joints and other explicitly specified external forces.
     extFList = extF(t,j)
 
@@ -172,14 +173,14 @@ function genU(extFList::Vector{extForces})::Matrix{Float64}
     return u
 end
 
-function linearizeDiff(x::Vector{T},u::Matrix{S},j::Tuple{Vararg{Joint}}, GravityInInertial::MArray{Tuple{3},Real,1,3} = MVector{3,Real}([0.0,0.0,-9.806])) where {T<:Real, S<:Real}
+function linearizeDiff(x::Vector{T},u::Matrix{S},j::Vector{Joint}, GravityInInertial::Vector{Float64} = [0.0,0.0,-9.806]) where {T<:Real, S<:Real}
     A = ForwardDiff.jacobian(z -> fxdot(z,u,j,GravityInInertial),x) # State
     B = ForwardDiff.jacobian(z -> fxdot(x,z,j,GravityInInertial),u) # Input
     return A, B
 
 end
 
-function getXU_0(j::Tuple{Vararg{Joint}})
+function getXU_0(j::Vector{Joint})
     X0 = Vector{Float64}(j[1].RB1.x)
     for k = 1:length(j)
         append!(X0,j[k].RB2.x)
@@ -226,9 +227,20 @@ function checkRevJointIn(solPend1::solSim, rj2::Array{Float64})
     return ωSol, jointLoc1
 end
 
-# function trim(xFull::Vector{T}, j::Tuple{Vararg{Joint}}) where T<:Real
-#     nB = length(j) + 1; # Number of bodies
-#     x = xFull[1:14*nB];
-#     u = reshape(xFull[14*nB+1:end],(6,nB))
-#
-# end
+function joinBodies!(j1::Vector{Joint}, j2::Vector{Joint}, b1_id::Integer, b2_id::Integer, rj1::Vector{T}, rj2::Vector{T}; type::String="Weld", axis::Vector{T}=[0.0;0.0;1.0], k::T=0.0, rL::T=0.0, jointForce::Vector{T} = zeros(T,3), jointTorque::Vector{T} = zeros(T,3))  where T<:Real
+    # join the bodies b1 given by b1_id in j1 and b2_id in j2 at rj1 and rj2 respectively
+    # Create new joint as a weld joint, unless specified
+    len_j1 = length(j1); # old length of j1
+    RB1 = body_in_jointVec(j1,b1_id);
+    RB2 = body_in_jointVec(j2,b2_id);
+
+    newJ = Joint(RB1, RB2, rj1, rj2, type = type, axis = axis, k = k, rL = rL, jointForce = jointForce, jointTorque = jointTorque);
+    push!(j1,newJ)
+
+     # Update bodyIDs of all bodies present in joint tree j2
+    for i=1:length(j2)
+        j2[i].RB2.bodyID += len_j1;
+        push!(j1,j2[i])
+    end
+    filterInertialJoint!(j1); # This removes the connection of the body in joint tree j2 that was connected to the inertial frame (removes loop inside joint trees)
+end
