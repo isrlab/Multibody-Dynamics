@@ -3,7 +3,7 @@ include("RigidBody.jl")
 include("Joint.jl")
 include("OrientationConversion.jl")
 
-function extF(t::T, j::Tuple{Vararg{Joint}})::Vector{extForces} where T<:Real
+function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # Function to generate external forces
     # that may or may not be functions of time
     extFList = zeroExtForceVec(length(j)+1)
