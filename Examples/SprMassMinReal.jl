@@ -32,4 +32,4 @@ vSol = [xDotSol zeros(length(tSim),2)]
 plotPos(tSim,rSol)
 
 # Save data
-# save("SprMassMin.jld","rMin",rSol,"vMin",vSol)
+save("SprMassMin.jld","rMin",rSol,"vMin",vSol)
