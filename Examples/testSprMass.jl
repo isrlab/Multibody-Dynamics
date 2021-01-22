@@ -19,7 +19,8 @@ initialiseRigidBody!(R1,x0R1)
 rj1 = [0.0 0.0 0.0][:] # Joint Location in body frame of first body
 rj2 = [-l/2 0.0 0.0][:] # Joint location in body frame of second body
 k = 10.0
-j1 = Joint(RbI,R1,rj1,rj2,type="Spring",k=k, rL = l);
+c = 3.0
+j1 = Joint(RbI,R1,rj1,rj2,type="Spring",k=k, rL = l,c = c);
 j = [j1];
 
 # Simulation
@@ -28,9 +29,11 @@ tSpan = 0.01
 g = [0.0;0.0;0.0];
 tSim, solFinal = simulateDiff(tEnd,tSpan,j,g = g)
 
+## Check errors
+close("all");
 # Check errNorm of quat
 plotErrNorm(tSim,solFinal[1].β)
-
+plotPos(tSim, solFinal[1].r)
 # Compare with MinReal
 solMin = load("SprMassMin.jld")
 rMin = solMin["rMin"]

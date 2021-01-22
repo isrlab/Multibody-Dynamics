@@ -463,13 +463,16 @@ function ForceConSpr(x::AbstractArray{T}, j::Joint) where T<:Real
     # First body
     E1 = genE(β1)
     F1 = j.k*(norm(posSpr1-posSpr2)-j.restLen)*unitVec # Force exerted by spring on the first body (inertial frame)
-    τ1 = cross(transpose(b1_dcm)*j.pos1,F1) # Torque exerted by spring on the first body (inertial frame)
+    println("F1 = ", F1);
+    F1 += j.c*((x2[8:10] - x1[8:10])); # Damper force (damper coefficient*(velocity difference))
+    println("F1 with damper = ", F1);
+    τ1 = cross(transpose(b1_dcm)*j.pos1,F1) # Torque exerted by spring-damper on the first body (inertial frame)
     Γb1 = [0.0;b1_dcm*τ1] #(body frame)
     Γu1 = 2*transpose(E1)*Γb1 # generalized torque vector
 
     # Second body
     E2 = genE(β2)
-    F2 = -F1 # Force exerted by spring on second body
+    F2 = -F1 # Force exerted by spring-damper on second body
     τ2 = cross(transpose(b2_dcm)*j.pos2,F2) # Torque exerted by spring on second body
     Γb2 = [0.0;b2_dcm*τ2]
     Γu2 = 2*transpose(E2)*Γb2

@@ -18,16 +18,17 @@ mutable struct Joint
     # Revolute Joint
     axis::Vector{T} where T<:Real # Axis for revolute joint
 
-    # Spring
+    # Spring-Damper
     k::T where T<:Real
     restLen::T where T<:Real
+    c::T where T<:Real
 
     # Joint Actuation: Defined in the body frame of the parent link
     jointF::Vector{T} where T<:Real # Length: 6 [F;τ]
 
     function Joint(body1::RigidBody, body2::RigidBody, rj1::Vector{T},
         rj2::Vector{T}; type::String="Free",
-        axis::Vector{T}=[0.0;0.0;1.0], k::T=0.0, rL::T=0.0,
+        axis::Vector{T}=[0.0;0.0;1.0], k::T=0.0, rL::T=0.0, c::T=0.0,
         jointForce::Vector{T} = zeros(T,3), jointTorque::Vector{T} = zeros(T,3)) where T<:Real
         # Default values for type, axis, k, and restLen provided.
         allowedTypes = ["Revolute", "Revolute2", "Spherical", "Weld", "Free", "Spring"]
@@ -36,14 +37,15 @@ mutable struct Joint
         end
 
         this = new()
-        this.RB1 = body1
+        this.RB1 = body1;
         this.RB2 = body2
-        this.pos1 = rj1
-        this.pos2 = rj2
+        this.pos1 = rj1 # Position of joint in body frame of body1 wrt body1 cm
+        this.pos2 = rj2 # Position of joint in body frame of body2 wrt body2 cm
         this.type = type
-        this.axis = axis
-        this.k = k
-        this.restLen = rL
+        this.axis = axis # Revolute joint axis
+        this.k = k # Spring constant
+        this.c = c # Damper
+        this.restLen = rL # Rest length of spring
         this.jointF = [jointForce;jointTorque]
 
         return this

@@ -9,11 +9,12 @@ global m = 1.0
 global l = 1.0
 global restLen = l
 global k = 10.0
+global c = 3.0
 
 function xdot!(xdot::Vector{Float64},x::Vector{Float64})
-    global l, m, k, restLen
+    global l, m, k, restLen, c
     xdot[1] = x[2]
-    xdot[2]  = -k/m*(x[1]-restLen)
+    xdot[2]  = -k/m*(x[1]-restLen) - c/m*x[2];
 end
 
 function mainDynMinReal!(dx,x,p,t)
