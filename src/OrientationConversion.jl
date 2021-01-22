@@ -213,3 +213,7 @@ function quaternionProduct(β1::Vector{T},β2::Vector{T})::Vector{T} where T <: 
          β1[2]*β2[2:4] + β2[1]*β1[2:4] + cross(β1[2:4],β2[2:4])]
     return x
 end
+
+function quatNormErr(β::Vector{T}) where T<:Real
+    return (norm(β)-1)
+end
