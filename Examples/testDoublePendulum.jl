@@ -6,7 +6,7 @@ using Revise
 using JLD
 using BenchmarkTools
 ##
-clearconsole()
+# clearconsole()
 j1 = Nothing
 j2 = Nothing
 ##

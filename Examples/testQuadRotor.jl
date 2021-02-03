@@ -4,7 +4,7 @@ include("../src/plotSol.jl")
 include("../src/simulateDiff.jl")
 include("../src/OrientationConversion.jl")
 ##
-clearconsole()
+# clearconsole()
 j1 = Nothing
 j2 = Nothing
 j3 = Nothing
