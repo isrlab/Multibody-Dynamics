@@ -18,7 +18,7 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # extFList[1] = zeroExtForce()
 
     # Pendulum
-    # extFList[2] = extForces([0.0 0 0.1],[0.0 0 0],[0.0 0.0 0.0]);
+    extFList[2] = extForces([0.0 0 0.1],[0.0 0 0],[0.0 0.0 0.0]);
 
     # Double Pendulum Test
     # extFList[2] = zeroExtForce()
@@ -42,7 +42,7 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # QuadTest
-    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
+    # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1])#*sin(t)])
     # extFList[4] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1*sin(t)])
     # extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
     # extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])

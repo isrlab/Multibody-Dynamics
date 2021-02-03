@@ -108,6 +108,12 @@ function fxdot(X::Vector{T},U::Matrix{S},j::Vector{Joint},GravityInInertial::Vec
 
     unconstrF, constrF = Constraint(X, U, j, GravityInInertial)
 
+    # m = central_fdm(10,1)
+    # jb1 = FiniteDifferences.jacobian(m,z -> Constraint(z,U,j,GravityInInertial)[2],X)[1]
+    # jb2 = ForwardDiff.jacobian(z ->Constraint(z,U,j,GravityInInertial)[2],X)
+    # println("jb_Fcerr = ", norm(jb1-jb2))
+    # sleep(1000)
+
     xdot = Vector{Union{T,S}}(undef,14*(nJ+1));
     xdot[1:14] = zeros(14);
 

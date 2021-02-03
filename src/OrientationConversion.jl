@@ -217,3 +217,15 @@ end
 function quatNormErr(β::Vector{T}) where T<:Real
     return (norm(β)-1)
 end
+
+function randomQuat()
+    phi = pi/2*rand();
+    e = 1/sqrt(3);
+    q = [cos(phi/2);e*sin(phi/2)*ones(3)];
+    # u,v,w = rand(3)
+    # q = [sqrt(1-u)*sin(2*π*v);
+    #      sqrt(1-u)*cos(2*π*v);
+    #      sqrt(u)*sin(2*π*w);
+    #      sqrt(u)*cos(2*π*w)]
+    return q
+end

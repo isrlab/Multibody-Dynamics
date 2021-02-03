@@ -54,19 +54,19 @@ j3 = Joint(QuadCube,Prop2,rjCube2,rjProp,type = "Revolute",axis = axis);
 j4 = Joint(QuadCube,Prop3,rjCube3,rjProp,type = "Revolute",axis = axis);
 j5 = Joint(QuadCube,Prop4,rjCube4,rjProp,type = "Revolute",axis = axis);
 
-j = (j1,j2,j3,j4,j5);
+j = ([j1,j2,j3,j4,j5]);
 ## Linearization
-x0, u0 = getXU_0(j);
-A,B = linearizeDiff(x0, u0, j);
-println("A = ",A)
-println("B = ",B)
-sleep(1200)
+# x0, u0 = getXU_0(j);
+# A,B = linearizeDiff(x0, u0, j);
+# println("A = ",A)
+# println("B = ",B)
+# sleep(1200)
 
 ## Simulation
 tEnd = 0.1;
 tSpan = 0.01;
-g = MVector{3, Real}([0.0,0.0,0.0]) # Gravity Vector.
-tSim, solFinal = simulate(tEnd,tSpan,j,g=g);
+g =([0.0,0.0,0.0]) # Gravity Vector.
+tSim, solFinal = simulateDiff(tEnd,tSpan,j,g=g);
 
 solQuad = solFinal[1];
 solProp1 = solFinal[2];

@@ -18,18 +18,33 @@ I1 = [1 0 0; 0 m*l^2/12 0; 0 0 1]
 R1 = RigidBody(m,I1,2)
 R2 = RigidBody(m,I1,3)
 RbI = InertialFrameAsRB()
-x0R1 = [l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+
+# Suspended horizontally
+# x0R1 = [l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+# initialiseRigidBody!(R1,x0R1)
+# x0R2 = [3*l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+# initialiseRigidBody!(R2,x0R2)
+
+# Perturbed from equilibrium
+theta = deg2rad(30)
+x1_temp = [l/2*sin(theta);0.0;-l/2*cos(theta)];
+x2_temp = [3*l/2*sin(theta);0.0;-3*l/2*cos(theta)];
+x0R1 = [x1_temp;[1;zeros(3)];zeros(3);zeros(4)]
 initialiseRigidBody!(R1,x0R1)
-x0R2 = [3*l/2;zeros(2);[1;zeros(3)];zeros(3);zeros(4)]
+x0R2 = [x2_temp;[1;zeros(3)];zeros(3);zeros(4)]
 initialiseRigidBody!(R2,x0R2)
+rj3 = x1_temp;
+rj4 = -x1_temp;
 
 axisY = [0.0 1.0 0.0][:] # Axis about which bar is revolving
 
 rj1 = [0.0 0.0 0.0][:] # Joint Location in body frame of first body
-rj2 = [-l/2 0.0 0.0][:] # Joint location in body frame of second body
+rj2 = -R1.x[1:3]
+# rj2 = [-l/2 0.0 0.0][:] # Joint location in body frame of second body
 
-rj3 = [l/2 0.0 0.0][:] #Joint location in body frame of pend1
-rj4 = [-l/2 0.0 0.0][:] #Joint location in body frame of pend2
+# rj3 = [l/2 0.0 0.0][:] #Joint location in body frame of pend1
+# rj4 = [-l/2 0.0 0.0][:] #Joint location in body frame of pend2
+
 
 j1 = Joint(RbI,R1,rj1,rj2,type="Revolute",axis=axisY)
 j2 = Joint(R1,R2,rj3,rj4,type="Revolute",axis=axisY)
@@ -41,9 +56,9 @@ j = [j1;j2];
 ## Simulation
 tEnd = 1.0
 tSpan = 0.01;
-@btime simulateDiff(tEnd, tInt, j, g=g);
-sleep(1000);
-tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
+# @btime simulateDiff(tEnd, tInt, j, g=g);
+# sleep(1000);
+tSim, solFinal = simulateDiff(tEnd,tSpan,j,g=g)
 
 solPend1  = solFinal[1]
 solPend2  = solFinal[2]
@@ -71,7 +86,7 @@ plotPos(tSim,jointLoc1 .- jointLoc2)
 # plotPos(tSim,jointLoc2)
 # plotQuat(tSim, solPend1.β)
 # plotAngVel(tSim, ωSol)
-# plotPos(tSim, solPend.r)
+# plotPos(tSim, solPend1.r)
 ## Compare with MinReal
 solMin = load("DoublePendulumMin.jld")
 r1Min = solMin["r1Min"]

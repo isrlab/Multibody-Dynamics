@@ -163,10 +163,10 @@ end
 
 function InertialFrameAsRB()::RigidBody
     m = 0.0
-    I = zeros(Real,(3,3))
+    I = zeros(3,3)
 
     b = RigidBody(m,I,1)
-    b.x = Vector{Real}([zeros(3);1.0;zeros(3);zeros(3);zeros(4)]);
+    b.x = [zeros(3);1.0;zeros(3);zeros(3);zeros(4)]
     b.dcm = quat2dcm(b.x[4:7])
     b.ω = angVel(b.x[4:7],b.x[11:14])
     return b

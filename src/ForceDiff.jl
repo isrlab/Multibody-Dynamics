@@ -8,77 +8,7 @@ using LinearAlgebra
 using ForwardDiff
 using Revise
 using StaticArrays
-
-# function Constraint(x::AbstractArray{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3})::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
-#
-#     Fc, Ffinal = FcFn(x, j, extFList, GravityInInertial);
-#
-#     # jb = ForwardDiff.jacobian(z -> FcFn([x[1:14];z], j, extFList, GravityInInertial)[1],x[15:end])
-#     # println("jb(Fc) = ", jb)
-#     # sleep(1000);
-#
-#     # Partition generated ForceConstr for each rigid body.
-#     ForceConstr = zeros(T,(7,length(j)+1))
-#     for i=1:length(j)
-#         k = j[i].RB2.bodyID
-#         ForceConstr[:,k] = Fc[7*(k-2)+1:7*(k-1)]
-#     end
-#
-#     # Partition generated Ffinal (unconstrainedF) for each rigid body.
-#     unconstrF = zeros(T,(7,length(j)+1))
-#     for i=1:length(j)
-#         k = j[i].RB2.bodyID
-#         unconstrF[:,k] = Ffinal[7*(k-2)+1:7*(k-1)]
-#     end
-#     # Return unconstrF, ForceConstr.
-#     return (unconstrF,ForceConstr)
-#
-# end
-#
-# function FcFn(x::AbstractArray{T}, j::Tuple{Vararg{Joint}}, extFList::Vector{extForces}, GravityInInertial::MArray{Tuple{3},Real,1,3}) where T<:Real
-#
-#     Afinal, bfinal = Ab_VecOfMat(x,j);
-#
-#     ## Check Afinal jac
-#     # jb = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[1],x);
-#     # println("jb = ", jb[:,15:end])
-#     # sleep(1000);
-#
-#     ## Check bfinal jac
-#     # jb = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[2],x);
-#     # println("jb(bfinal) = ", jb[:,15:28])
-#     # sleep(1000);
-#
-#     Ffinal = assembleF(x,j,extFList,GravityInInertial)
-#     ## Check Ffinal jac
-#     # jb = ForwardDiff.jacobian(z -> assembleF(z,j,extFList, GravityInInertial),x)
-#     # println("jb = ", jb[:,15:28])
-#     # sleep(1000);
-#
-#     Mfinal, Ms, Ms_inv = M_mat(x,j);
-#     ## Check Mfinal jac
-#     # jb = ForwardDiff.jacobian(z -> M_mat(z,j)[3], x)
-#     # println("jb(Ms_inv) = ", jb[:,15:28])
-#     # sleep(1000);
-#
-#     accUnconstr = Mfinal\Ffinal # Unconstrained Acceleration
-#
-#     if !isreal(Ms) # insignificant imaginary values showing up
-#         M1 = real(Ms)
-#         # println("Imag part magnitude =", norm(imag(Ms)))
-#         M2 = real(Ms_inv)
-#
-#         tempMat = Afinal*M2
-#         tempMat_pinv = tempMat'*((tempMat*tempMat')\I(size(tempMat)[1]));
-#         Fc = Ms*tempMat_pinv*(bfinal - Afinal*accUnconstr);
-#     else
-#         tempMat = Afinal*Ms_inv;
-#         tempMat_pinv = tempMat'*((tempMat*tempMat')\I(size(tempMat)[1]));
-#         Fc = Ms*tempMat_pinv*(bfinal - Afinal*accUnconstr); # using Udwadia's formulation
-#     end
-#     # Fc and Ffinal are in the inertial frame
-# return Fc, Ffinal
-# end
+using FiniteDifferences
 
 function Constraint(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint},  GravityInInertial::Vector{Float64})::Tuple{AbstractArray{Union{T,S}}, AbstractArray{Union{T,S}}} where {T<:Real, S<:Real}
 
@@ -115,8 +45,10 @@ function FcFn(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint}, Gravit
     Afinal, bfinal = Ab_VecOfMat(x,j);
 
     ## Check Afinal jac
-    # jb = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[1],x);
-    # println("jb = ", jb[:,15:end])
+    m = central_fdm(10,1)
+    # jb1 = FiniteDifferences.jacobian(m, z -> Ab_VecOfMat(z,j)[2],x)[1];
+    # jb2 = ForwardDiff.jacobian(z -> Ab_VecOfMat(z,j)[2],x);
+    # println("jb_berr = ", norm(jb1-jb2))
     # sleep(1000);
 
     ## Check bfinal jac
@@ -126,17 +58,25 @@ function FcFn(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint}, Gravit
 
     Ffinal = assembleF(x,u,j,GravityInInertial)
     ## Check Ffinal jac
-    # jb = ForwardDiff.jacobian(z -> assembleF(z,j,extFList, GravityInInertial),x)
+    # jb1 = FiniteDifferences.jacobian(m,z -> assembleF(z,u,j,GravityInInertial),x)[1]
+    # jb2 = ForwardDiff.jacobian(z -> assembleF(z,u,j,GravityInInertial),x)
     # println("jb = ", jb[:,15:28])
+    # println("jb_berr = ", norm(jb1-jb2))
     # sleep(1000);
 
     Mfinal, Ms, Ms_inv = M_mat(x,j);
+
     ## Check Mfinal jac
     # jb = ForwardDiff.jacobian(z -> M_mat(z,j)[3], x)
     # println("jb(Ms_inv) = ", jb[:,15:28])
+    # jb1 = FiniteDifferences.jacobian(m,z -> M_mat(z,j)[2],x)[1]
+    # jb2 = ForwardDiff.jacobian(z -> M_mat(z,j)[2],x)
+    # println("jb_Merr = ", norm(jb1-jb2))
+    # println("jb1 = ", (jb1))
+    # println("jb2 = ", (jb2))
     # sleep(1000);
 
-    accUnconstr = Mfinal\Ffinal # Unconstrained Acceleration
+    accUnconstr = inv(Mfinal)*Ffinal # Unconstrained Acceleration
 
     if !isreal(Ms) # insignificant imaginary values showing up
         M1 = real(Ms)
@@ -200,20 +140,37 @@ function Ab_VecOfMat(x::AbstractArray{T}, j::Vector{Joint})::Tuple{AbstractArray
 end
 
 function M_mat(x::AbstractArray{T}, j::Vector{Joint})::Tuple{AbstractArray{T}, AbstractArray{T}, AbstractArray{T}} where T<:Real
+    # println("x = ", x)
     Mfinal = assembleM(x,j);
+    # println("Mfinal = ", Mfinal)
+    # sleep(1000);
     if typeof(x[1]) == Float64 # eigendecomposition not required for sqrt
         Ms = real(sqrt(Mfinal)) # insignificant imaginary values showing up
         Ms_inv = Ms\I(size(Ms)[1])
+        # Ms2 = (sqrt.(diag(Mfinal))).*Matrix{T}(I,size(Mfinal))
+        # println("Ms_err = ", norm(Ms - Ms2))
+        # sleep(1000)
     else # Dual type variable (for ForwardDiff), applicable when taking jacobian
-        # println("type of Mfinal = ", typeof(Mfinal))
-        vals, vecs = eigen(Mfinal);
-        # println("typeof(vals) = ", typeof(vals))
-        vals_sq = zeros(T,size(vals))
-        # vals_sq_inv = zeros(T,size(vals))
-        for i=1:length(vals)
-            vals_sq[i] = sqrt(vals[i])
-        end
-        Ms = vecs*diagm(vals_sq)*(vecs\I(size(vecs,1))) #sqrt(M)
+        # Ms = (sqrt.(diag(Mfinal))).*Matrix{T}(I,size(Mfinal))
+
+        # diag_Mfinal = diag(Mfinal);
+        # vals_sq = zeros(T,size(Mfinal,1))
+        # for i=1:size(Mfinal,1)
+        #     vals_sq[i] = sqrt(diag_Mfinal[i])
+        # end
+        # Ms = diagm(vals_sq);
+
+        # Ms = (Mfinal^(0.5))
+
+        # vals, vecs = eigen(Mfinal);
+        # vals_sq = zeros(T,size(vals))
+        # for i=1:length(vals)
+        #     vals_sq[i] = sqrt(vals[i])
+        # end
+        # Ms = vecs*diagm(vals_sq)*(vecs\I(size(vecs,1)))
+
+        F = svd(Mfinal)
+        Ms = permutedims(F.Vt)*diagm(sqrt.(F.S))*F.Vt
         Ms_inv = Ms\I(size(Ms)[1]); #M^(-0.5)
     end
     return Mfinal, Ms, Ms_inv
@@ -682,33 +639,11 @@ function genMatM(X::AbstractArray{T},b::RigidBody)::AbstractArray{T} where T<:Re
     β = X[14*(b_id-1)+4:14*(b_id-1)+7]
     E = genE(β)
     J = b.J
-    M = [b.m*Matrix{Float64}(I,3,3)          zeros(3,4)
-                         zeros(4,3) 4*transpose(E)*J*E]
+    M = Matrix{T}(undef,(7,7))
+    M = [b.m*Matrix{T}(I,3,3)          zeros(T,(3,4))
+                   zeros(T,(4,3)) 4*permutedims(E)*J*E]
     return M
 end
-
-# function genExtF(X::AbstractArray{T},b::RigidBody,extF::extForces,GravityInInertial::MArray{Tuple{3},Real,1,3})::AbstractArray{T} where T<:Real
-#     # Function to generate augmented external Force vector for unconstrained system
-#     # External Forces are always in the body frame
-#     b_id = b.bodyID;
-#     β = X[14*(b_id-1)+4:14*(b_id-1)+7]
-#     βdot = X[14*(b_id-1)+11:14*(b_id-1)+14]
-#     dcm = quat2dcm(β)
-#     # b.ω = angVel(β,βdot)
-#     E = genE(β)
-#     Edot = genE(βdot)
-#     TotalMoment = zeros(3)
-#     for i in 1:size(extF.Forces)[1]
-#         TotalMoment = TotalMoment + cross(extF.Positions[i,:],extF.Forces[i,:])
-#     end
-#     TotalMoment = TotalMoment + sum(extF.Torques,dims=1)[:]
-#     Γb = [0.0;TotalMoment] # In the body frame
-#     Γu = 2*transpose(E)*Γb
-#     F = [transpose(dcm)*(sum(extF.Forces,dims=1)[:]) + b.m*GravityInInertial
-#          Γu - 8*transpose(Edot)*b.J*E*βdot - 4*b.J[1,1]*(transpose(βdot)*βdot)*β]
-#     return F
-#     # F is a 7x1 vector in the inertial frame
-# end
 
 function genExtF(X::AbstractArray{T},b::RigidBody,U::AbstractArray{S},GravityInInertial::Vector{Float64})::AbstractArray{Union{T,S}} where {T<:Real, S<:Real}
     # Function to generate augmented external Force vector for unconstrained system
@@ -750,4 +685,3 @@ function unique_ids(A::AbstractArray{T,2}) where T<:Real
 end
 
 ##
-# trying StaticVector
