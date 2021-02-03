@@ -172,5 +172,5 @@ finJ_B = FiniteDifferences.jacobian(m, z->fxdot(x0,z,j,g),u0)[1];
 println("err_A = ", norm(fdJ_A - finJ_A))
 println("err_B = ", norm(fdJ_B - finJ_B))
 
-@btime linearize(x0,u0,j,g);
-@btime FiniteDifferences.jacobian(m, z->fxdot(z,u0,j,g),x0);
+# @btime linearize(x0,u0,j,g);
+# @btime FiniteDifferences.jacobian(m, z->fxdot(z,u0,j,g),x0);
