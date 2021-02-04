@@ -2,7 +2,6 @@ include("../src/simulateDiff.jl")
 
 using ForwardDiff
 using FiniteDifferences
-m = central_fdm(5,1); # first order differential using fifth order central difference method
 
 function kronSum(A::AbstractArray{T,2},B::AbstractArray{T,2}) where T<:Real
     out = kron(A, Matrix{T}(I,(size(B)))) + kron(Matrix{T}(I,(size(A))),B)
@@ -162,15 +161,17 @@ function linearize(x,u,j,GravityInInertial)
  return dFx, dFu
     # return dFc
 end
+
 ## Test for different robots
-x0, u0 = getXU_0(j);
-fdJ_A, fdJ_B = linearize(x0,u0,j,g);
-finJ_A = FiniteDifferences.jacobian(m, z->fxdot(z,u0,j,g),x0)[1];
-finJ_B = FiniteDifferences.jacobian(m, z->fxdot(x0,z,j,g),u0)[1];
+# x0, u0 = getXU_0(j);
+# fdJ_A, fdJ_B = linearize(x0,u0,j,g);
+# m = central_fdm(5,1); # first order differential using fifth order central difference method
+# finJ_A = FiniteDifferences.jacobian(m, z->fxdot(z,u0,j,g),x0)[1];
+# finJ_B = FiniteDifferences.jacobian(m, z->fxdot(x0,z,j,g),u0)[1];
 
 
-println("err_A = ", norm(fdJ_A - finJ_A))
-println("err_B = ", norm(fdJ_B - finJ_B))
+# println("err_A = ", norm(fdJ_A - finJ_A))
+# println("err_B = ", norm(fdJ_B - finJ_B))
 
 # @btime linearize(x0,u0,j,g);
 # @btime FiniteDifferences.jacobian(m, z->fxdot(z,u0,j,g),x0);
