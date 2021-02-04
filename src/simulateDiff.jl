@@ -60,11 +60,17 @@ function simulateDiff(tEnd::Float64,tInt::Float64,j::Vector{Joint};
 
     solFinal = Vector{solSim}(undef,length(j))
     for i=1:length(j)
-        rSol = transpose(sol[14*i+1:14*i+3,:])
-        vSol = transpose(sol[14*i+8:14*i+10,:])
-        βSol = transpose(sol[14*i+4:14*i+7,:])
-        βdotSol = transpose(sol[14*i+11:14*i+14,:])
-        solFinal[i] = solSim(rSol,vSol,βSol,βdotSol)
+        rSol = Matrix{Float64}(undef,(length(sol.t),3))
+        vSol = Matrix{Float64}(undef,(length(sol.t),3))
+        βSol = Matrix{Float64}(undef,(length(sol.t),4))
+        βdotSol = Matrix{Float64}(undef,(length(sol.t),4))
+        for t=1:length(sol.t)
+            rSol[t,:] = (sol.u[t][14*i+1:14*i+3])
+            vSol[t,:] = (sol.u[t][14*i+8:14*i+10])
+            βSol[t,:] = (sol.u[t][14*i+4:14*i+7])
+            βdotSol[t,:] = (sol.u[t][14*i+11:14*i+14])
+        end
+    solFinal[i] = solSim(rSol,vSol,βSol,βdotSol)
     end
     return (sol.t, solFinal)
 end
