@@ -1,4 +1,3 @@
-J = j[1].RB2.J;
 β2 = j[1].RB2.x[4:7]
 # β2 = []
 function M_β(β::Vector{T}) where T<:Real
