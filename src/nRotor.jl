@@ -39,15 +39,15 @@ function gen_nRotor(n::Integer)
 end
 ## simulate quadcopter
 # clearconsole();
-qRotor_j = gen_nRotor(4);
-
-tEnd = 0.1;
-tSpan = 0.01;
-g =([0.0,0.0,-9.81]); # Gravity Vector.
-tSim, solFinal = simulate(tEnd, tSpan, qRotor_j, g=g);
-
-solQuad = solFinal[1];
-solProp1 = solFinal[2];
-solProp2 = solFinal[3];
-solProp3 = solFinal[4];
-solProp4 = solFinal[5];
+# qRotor_j = gen_nRotor(4);
+#
+# tEnd = 0.1;
+# tSpan = 0.01;
+# g =([0.0,0.0,-9.81]); # Gravity Vector.
+# tSim, solFinal = simulate(tEnd, tSpan, qRotor_j, g=g);
+#
+# solQuad = solFinal[1];
+# solProp1 = solFinal[2];
+# solProp2 = solFinal[3];
+# solProp3 = solFinal[4];
+# solProp4 = solFinal[5];
