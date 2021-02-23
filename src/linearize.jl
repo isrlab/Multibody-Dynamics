@@ -160,7 +160,9 @@ function linearize(xv,uv,j,GravityInInertial)
 
             df_u[14*k+8:14*k+14,:] = dqdd_u[7*(k-1)+1:7*k,:];
         end
-        return df_x, df_u
+        df_x_woIn = df_x[15:end,15:end]; # without the inertial frame
+        df_u_woIn = df_u[15:end,7:end];  # without the inertial frame
+        return df_x_woIn, df_u_woIn
     end
 
     dfx_x, dfx_u = fxdotDiff(xv,uv);
