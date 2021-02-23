@@ -14,9 +14,6 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
         TotalMass += j[i].RB2.m
     end
 
-    # First body always the inertial frame
-    # extFList[1] = zeroExtForce()
-
     # Pendulum
     # extFList[2] = extForces([0.0 0 0.1],[0.0 0 0],[0.0 0.0 0.0]);
 
@@ -24,22 +21,9 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # extFList[2] = zeroExtForce()
     # extFList[3] = extForces([0.0 0 0],[0.0 0 0],[0.0 0.0 0.0])
 
-    # Joint Test
-    # extFList[2] = extForces(zeros(1,3), zeros(1,3), [0.0 0.0 0.01])
-
     # Cube Prop Test
     # extFList[2] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.0])
     # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1])
-
-    # CoAxCop
-    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    # extFList[4] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    # extFList[5] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-
-    # Gimbal test
-    # extFList[2] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
-    # extFList[3] = extForces(zeros(1,3),zeros(1,3),[0.0 0.0 0.0])
 
     # QuadTest
     # extFList[3] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 0.1])#*sin(t)])
@@ -47,18 +31,17 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
     # extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
 
-    # nRotors = length(j) - 1;
-    # C_T = 1.27e-6;
-    # Ω_h = sqrt(TotalMass*(9.81)/nRotors/C_T);
-    # for i=3:j[end].RB2.bodyID
-    #     extFList[i] = genRotorF(Ω_h);
-    # end
+    nRotors = length(j) - 1;
+    C_T = 1.27e-6;
+    Ω_h = sqrt(TotalMass*(9.81)/nRotors/C_T);
+    flt = ones(nRotors);  # fault vector for the n Rotors
+    # flt = [1.0;0.5;1.0;0.5];
+    for i=3:j[end].RB2.bodyID
+        extFList[i] = genRotorF(Ω_h,flt[i-2]);
+    end
 
-    # ModRob
     # grav = [0.0,0.0,-9.806]
 
-    # extFList[5] = extForces(transpose(-TotalMass*grav/2), zeros(1,3), zeros(1,3))
-    # extFList[10] = deepcopy(extFList[5])
     return extFList
 end
 
@@ -82,10 +65,11 @@ function genJointF(t::T,j::Joint)::Tuple{Vector{T}, Vector{T}} where T<:Real
 
 end
 
-function genRotorF(Ω)
+function genRotorF(Ω,f)
+    # f: fault signal ∈ [0,1]. 0 indicates total fault and 1 indicates nominal performance
     C_T = 1.27e-6; # thrust coefficient
     T = C_T*Ω^2; # thrust
-    F = [0;0;T];
+    F = f*[0;0;T];
     prop_Fτ = extForces(permutedims(F), zeros(1,3), zeros(1,3));
     return prop_Fτ;
 end
