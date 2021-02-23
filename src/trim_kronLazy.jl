@@ -795,7 +795,7 @@ end
 # trim_U = u0Orig;
 # iy = zeros(Integer,7*(nB-1));
 #
-# out = trimDiff2(j,g,ix=ix, iy=iy);
+# out = trim_kronLazy(j,g,ix=ix, iy=iy);
 # trim_x, trim_u, gam = out;
 # println("trim_x = ", trim_x)
 # trim_X = [j[1].RB1.x;trim_x]

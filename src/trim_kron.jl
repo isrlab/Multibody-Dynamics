@@ -4,7 +4,7 @@ using Ipopt
 using GenericLinearAlgebra
 
 ## Ipopt directly
-function trimDiff(j::Vector{Joint},GravityInInertial::Vector{Float64};
+function trim_kron(j::Vector{Joint},GravityInInertial::Vector{Float64};
   ix::Vector{Integer}=zeros(Integer,20*(nB-1)+1),
   iy::Vector{Integer}=zeros(Integer,7*(nB-1)))
 
