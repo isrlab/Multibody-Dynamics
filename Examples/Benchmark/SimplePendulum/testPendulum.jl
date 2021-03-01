@@ -5,6 +5,7 @@ include("../../../src/OrientationConversion.jl")
 include("../../../src/trim_kronLazy.jl");
 
 using Revise
+using JLD
 using BenchmarkTools
 
 ##
@@ -20,7 +21,7 @@ R1 = RigidBody(m, I1, 2)
 RbI = InertialFrameAsRB()
 
 # Suspended at an angle theta from vertical
-theta = deg2rad(30)
+theta = deg2rad(90)
 x_temp = [l/2*sin(theta); 0.0; -l/2*cos(theta)];
 x0R1 = ([x_temp;[1;zeros(3)];zeros(3);zeros(4)]);
 initialiseRigidBody!(R1,x0R1)
