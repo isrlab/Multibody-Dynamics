@@ -4,6 +4,29 @@ using Ipopt
 using LazyArrays
 using GenericLinearAlgebra
 
+function assembleFdiff(x::AbstractArray{T}, u::AbstractArray{S}, j::Vector{Joint}, GravityInInertial:: Vector{Float64}) where {T<:Real, S<:Real}
+    maxBodyID = j[end].RB2.bodyID
+    F = Vector(undef,7*(maxBodyID-1))
+
+    for i=1:length(j)
+        k = j[i].RB2.bodyID - 1
+        F[7*(k-1)+1:7*k] =
+        genExtF(x,j[i].RB2,u[:,k+1],GravityInInertial)
+
+        if j[i].type == "Spring"
+            F_b1, F_b2 = ForceConSpr(x,j[i]); # Forces acting on the bodies connected by the spring. Note that a spring does not constrain 2 bodies any more than they previously were, i.e., degrees of freedom remain the same.
+
+            b1_id = j[i].RB1.bodyID -1; b2_id = j[i].RB2.bodyID - 1;
+            if j[i].RB1.m == 0.0 # First body is the inertial frame
+                F[7*(b2_id-1)+1:7*b2_id] += F_b2;
+            else # First body is not the inertial frame
+                F[7*(b1_id-1)+1:7*b1_id] += F_b1;
+                F[7*(b2_id-1)+1:7*b2_id] += F_b2;
+            end
+        end
+    end
+    return F
+end
 ## Ipopt directly
 function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
   ix::Vector{Integer}=zeros(Integer,20*(nB-1)+1),
@@ -120,8 +143,9 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
   function kronProd(A,B)
     K = ApplyArray(kron,A[:,:],B[:,:]);
-    out = Matrix{Float64}(undef,size(K)...); copyto!(out,K);
-    return out
+    # out = Matrix{Float64}(undef,size(K)...); copyto!(out,K);
+    # return out
+    return K
   end
 
   function createCommMat(M)
@@ -138,14 +162,27 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
     return K
   end
 
+  function createCommMat(r,m)
+    # commutation matrix for a matrix of size r,ms
+    K = zeros(m*r,m*r);
+    for i=1:r
+        for j=1:m
+            ei = 1.0I(r)[:,i] # ith-canonical unit vector of dimension r
+            ej = 1.0I(m)[:,j] # jth-canonical unit vector of dimension m
+            K += kronProd(ei*permutedims(ej), ej*permutedims(ei))
+        end
+    end
+    return K
+  end
+
   function fdJ_kronAB(A,B, dA, dB)
     n,q = size(A[:,:]); p,r = size(B[:,:]);
     Iq = 1.0I(q); Ip = 1.0I(p); In = 1.0I(n); Ir = 1.0I(r);
     Inq = Matrix{Float64}(I,n,q); Ipr = Matrix{Float64}(I,p,r)
-    Krn = createCommMat(rand(r,n));
+    Krn = createCommMat(r,n);
     Ay1 = (kronProd(Krn,Ip)); Ay2 = (kronProd(In,vec(B)));
-    # println("typeof(Ay1) = ", typeof(Ay1));
-    # println("typeof(Ay2) = ", typeof(Ay2));
+    println("typeof(Ay1) = ", typeof(Ay1));
+    println("typeof(Ay2) = ", typeof(Ay2));
     Ay = kronProd(Iq, Ay1*Ay2);
     Bx1 = (kronProd(Iq,Krn)); Bx2 = (kronProd(vec(A),Ir));
     Bx = kronProd(Bx1*Bx2, Ip);
@@ -225,12 +262,15 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
     Gp, dGp = Gpdiff1(xv);
 
     function Fudiff1(x,u)
-      Fu = assembleF(x,u,j,g);
-      dFu = ForwardDiff.jacobian(y->assembleF(y,u,j,g),x);
-      dFu_u = ForwardDiff.jacobian(y->assembleF(x,y,j,g),u);
+      Fu = assembleFdiff(x,u,j,g);
+      dFu = ForwardDiff.jacobian(y->assembleFdiff(y,u,j,g),x);
+      dFu_u = ForwardDiff.jacobian(y->assembleFdiff(x,y,j,g),u);
       return Fu, dFu, dFu_u
     end
     Fu, dFu, dFu_u = Fudiff1(xv,uv);
+    Fu = convert(Vector{Float64}, Fu);
+    dFu = convert(Matrix{Float64}, dFu);
+    dFu_u = convert(Matrix{Float64}, dFu_u);
 
     function hFn(x,u)
       h = b - A*inv(M)*Fu;
@@ -243,6 +283,8 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
       # dh
       term1_1 = kronProd(permutedims(M_inv*Fu), 1.0I(size(A,1)));
+      # println("typeof(term1_1) = ", typeof(term1_1))
+      # println("typeof(dA) = ", typeof(dA))
       term1 = term1_1*dA;
       term2 = kronProd(permutedims(Fu), A)*dM_inv;
       term3 = A*M_inv*dFu;
@@ -484,6 +526,14 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
         return dFu_xx, dFu_ux, dFu_xu, dFu_uu
       end
       dFu_xx, dFu_ux, dFu_xu, dFu_uu = Fudiff2(xv,uv);
+      Fu = convert(Vector{Float64}, Fu);
+      dFu = convert(Matrix{Float64}, dFu);
+      dFu_u = convert(Matrix{Float64}, dFu_u);
+
+      dFu_xx = convert(Matrix{Float64}, dFu_xx);
+      dFu_ux = convert(Matrix{Float64}, dFu_ux);
+      dFu_xu = convert(Matrix{Float64}, dFu_xu);
+      dFu_uu = convert(Matrix{Float64}, dFu_uu);
 
       function hdiff2(x,u)
         # dh_xx
@@ -491,6 +541,10 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
         T1 = kronProd(permutedims(M_inv*Fu), 1.0I(size(A,1)))
         dMinvFu = kronProd(permutedims(Fu), 1.0I(size(M_inv,1)))*dM_inv + M_inv*dFu;
         dMinvFu_t = dMinvFu;
+        println("=========")
+        println("typeof(M_inv*Fu) = ", typeof(M_inv*Fu))
+        println("typeof(dMinvFu_t) = ", typeof(dMinvFu_t))
+
         dT1 = fdJ_kronAB(permutedims(M_inv*Fu), 1.0I(size(A,1)), dMinvFu_t, zeros((size(A,1)^2, length(x))));
         term1 = kronProd(permutedims(dA), 1.0I(size(T1,1)))*dT1
         term2 = kronProd(1.0I(size(dA,2)), T1)*dA_xx;

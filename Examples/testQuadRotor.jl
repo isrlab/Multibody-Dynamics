@@ -1,16 +1,19 @@
 # To test a simplified quadrotor.
 include("../src/plotSol.jl")
 include("../src/simulate.jl")
-include("../src/linearize.jl")
+# include("../src/linearize.jl")
 include("../src/nRotor.jl")
-include("../src/trim_kronLazy.jl");
+# include("../src/trim_kronLazy.jl");
+# include("../src/trim_kron.jl");
+# include("../src/trim_FinDiff.jl");
 
 # using nRotor.jl, generate quadrotor joint tree
 qRotor_j = gen_nRotor(4);
+g =([0.0,0.0,-9.81]); # Gravity Vector.
 
+## simulate
 tEnd = 0.1;
 tSpan = 0.01;
-g =([0.0,0.0,-9.81]); # Gravity Vector.
 tSim, solFinal = simulate(tEnd, tSpan, qRotor_j, g=g);
 
 solQuad = solFinal[1];
@@ -27,36 +30,107 @@ solProp4 = solFinal[5];
 
 ## plots
 # errors
-close("all");
-plotErrNorm(tSim,solQuad.β)
-plotErrNorm(tSim,solProp1.β)
-plotErrNorm(tSim,solProp2.β)
-plotErrNorm(tSim,solProp3.β)
-plotErrNorm(tSim,solProp4.β)
-plotPos(tSim,jointLoc1);
-plotPos(tSim,jointLoc2);
-plotPos(tSim,jointLoc3);
-plotPos(tSim,jointLoc4);
+# close("all");
+# plotErrNorm(tSim,solQuad.β)
+# plotErrNorm(tSim,solProp1.β)
+# plotErrNorm(tSim,solProp2.β)
+# plotErrNorm(tSim,solProp3.β)
+# plotErrNorm(tSim,solProp4.β)
+# plotPos(tSim,jointLoc1);
+# plotPos(tSim,jointLoc2);
+# plotPos(tSim,jointLoc3);
+# plotPos(tSim,jointLoc4);
 
-# trajectory
-plotPos(tSim, solQuad.r, "Quad");
-plotPos(tSim, solProp1.r, "Prop1");
-plotPos(tSim, solProp2.r, "Prop2");
-plotPos(tSim, solProp3.r, "Prop3");
-plotPos(tSim, solProp4.r, "Prop4");
+## trajectory
+# close("all");
+# plotPos(tSim, solQuad.r, "Quad");
+# plotPos(tSim, solProp1.r, "Prop1");
+# plotPos(tSim, solProp2.r, "Prop2");
+# plotPos(tSim, solProp3.r, "Prop3");
+# plotPos(tSim, solProp4.r, "Prop4");
 
-# angular velocities
-plotAngVel(tSim, ωCube)
-plotAngVel(tSim, ωProp1)
+## angular velocities
+# plotAngVel(tSim, ωCube)
+# plotAngVel(tSim, ωProp1)
 
-## old
+## find trim point and obtain linear plant
+x0, u0 = getXU_0(qRotor_j);
+nB = qRotor_j[end].RB2.bodyID;
+ix= zeros(Integer,20*(nB-1)+1);
+# WITH no fault in actuators, hover condition
+ix[14*(nB-1)+1:20*(nB-1)] .= 1;
+trim_U = u0;
+iy = zeros(Integer,7*(nB-1));
+
+out = trim_kronLazy(qRotor_j,g,ix=ix, iy=iy);
+# out = trim_FinDiff(qRotor_j,g,ix=ix, iy=iy);
+trim_x, trim_u, gam = out;
+println("trim_x = ", trim_x)
+trim_X = [qRotor_j[1].RB1.x;trim_x]
+# trim_U = [zeros(6) reshape(trim_u,(6,nB-1))];
+# println("trim_U = ", trim_U[:,2])
+# trim_U = zeros(6,nB);
+println("qconstr = ", norm(trim_x[4:7])-1)
+println("ẍ =", norm(fxdot(trim_X,trim_U, qRotor_j, g)))
+
+## find linear system
+x0, u0 = getXU_0(qRotor_j);
+x0_woIn = x0[15:end]; u0_woIn = u0[:,2:end]; # without the inertial frame
+println()
+println("####Linearizing####")
+A, Bu = linearize(x0, u0, qRotor_j, g);
+Cy = Matrix{Float64}(I,size(A)...); # full state measurement
+Cz = Matrix{Float64}(I,size(A)...); # full state output
+Dzu = zeros(size(Bu));
+## lti system (nominal, no disturbance or faults)
+using PyCall
+pyc = pyimport("control");
+Usys = zeros(length(u0_woIn),length(tSim));
+for i=1:length(tSim)
+  Usys[:,i] = u0_woIn[:];
+end
+sysNom = pyc.ss(A, Bu, Cz, Dzu); # nominal system at hover
+T, yout, xout = pyc.forced_response(sysNom, permutedims(tSim), Usys, x0_woIn);
+
+## with disturbance
+using Random
+rng = MersenneTwister(1234);
+ξ = randn(1,length(tSim));
+Uξsys = [Usys; ξ];
+
+Dyξ = ones(length(x0_woIn)); # disturbance in all states
+# no input in measurement
+Bξ = ones(length(x0_woIn)); # disturbance in all states
+Buξ = [Bu Bξ];
+Dzξ = ones(length(x0_woIn)); # disturbance in all states
+Dzuξ = [Dzu Dzξ];
+sysDist = pyc.ss(A, Buξ, Cz, Dzuξ); # nominal system at hover
+T2, yout2, xout2 = pyc.forced_response(sysDist, permutedims(tSim), Uξsys, x0_woIn);
+
+## with faults and disturbance
+flt_act = ones(length(u0_woIn)); # actuator fault vector; 1 indicates no fault
+act_pos = 9:6:27; # position of thrust in the u vector
+flt_act[act_pos] = [1.0;0.5;1.0;0.5]; # partial fault in rotors 2 and 4
+Σa = diagm(flt_act);
+# BuΣa = Bu*Σa;
+Bfξ = [Bu*Σa Bξ];
+Dfξ = [Dzu*Σa Dzξ];
+
+flt_sen = ones(size(Cy,1)); # sensor fault vector
+Σs = diagm(flt_sen);
+Σs_Cy = Σs*Cy; Σs_Dyξ = Σs*Dyξ;
+
+sysFlt = pyc.ss(A, Bfξ, Cz, Dfξ); # system with fault
+Tf, yout_f, xout_f = pyc.forced_response(sysFlt, permutedims(tSim), Uξsys, x0_woIn);
+##
+# # old
 # clearconsole()
 # j1 = Nothing
 # j2 = Nothing
 # j3 = Nothing
 # j4 = Nothing
 # j5 = Nothing
-
+#
 # ##
 # mb = 0.155; mp = 0.02;
 #
