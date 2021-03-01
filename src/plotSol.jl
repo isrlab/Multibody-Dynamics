@@ -1,7 +1,7 @@
 using PyPlot;
 
 function plotPos(tSim,rSol, titleStr::String="Pos")
-    figure(); clf;
+    figure(); clf();
     pygui(true);
     subplot(3,1,1);
     PyPlot.plot(tSim,rSol[:,1]); xlabel("t"); ylabel("x");
@@ -14,7 +14,7 @@ function plotPos(tSim,rSol, titleStr::String="Pos")
 end
 
 function plotVel(tSim,vSol, titleStr::String="Vel")
-    figure(); clf;
+    figure(); clf();
     pygui(true);
     subplot(3,1,1);
     PyPlot.plot(tSim,vSol[:,1]); xlabel("t"); ylabel("u");
@@ -28,7 +28,7 @@ function plotVel(tSim,vSol, titleStr::String="Vel")
 end
 
 function plotQuat(tSim,βSol, titleStr::String="Quaternion")
-    figure(); clf;
+    figure(); clf();
     pygui(true);
     subplot(4,1,1);
     PyPlot.plot(tSim,βSol[:,1]); xlabel("t"); ylabel("β0");
@@ -44,7 +44,7 @@ function plotQuat(tSim,βSol, titleStr::String="Quaternion")
 end
 
 function plotQuatDot(tSim,βdotSol, titleStr::String="Quat Dot")
-    figure(); clf;
+    figure(); clf();
     pygui(true);
     subplot(4,1,1);
     PyPlot.plot(tSim,βdotSol[:,1]); xlabel("t"); ylabel("̇β̇0");
