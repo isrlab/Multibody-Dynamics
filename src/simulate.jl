@@ -13,6 +13,7 @@ using LinearAlgebra
 using Revise
 using DifferentialEquations
 using StaticArrays
+using BenchmarkTools
 
 global GravityInInertial = [0.0,0.0,-9.806];
 
@@ -125,7 +126,7 @@ function fxdot(X::Vector{T},U::Matrix{S},j::Vector{Joint},GravityInInertial::Vec
         TotalForce = unconstrainedF_rb[1:3] + Fc_rb[1:3]
         TotalMoment = unconstrainedF_rb[4:7] + Fc_rb[4:7]
         genF = [TotalForce; TotalMoment]; # generalized force acting on RB
-        genM = genMatM(X, j[k].RB2) # generalized mass matrix of RB
+        genM = Array(genMatM(X, j[k].RB2)) # generalized mass matrix of RB
         xdot[14*k+1:14*k+7] = X[14*k+8:14*k+14]#xb[8:10]
         xdot[14*k+8:14*k+14] = inv(genM)*genF;
     end
