@@ -182,14 +182,15 @@ function skewX(x::Vector{T})::Matrix{T} where T<: Real
 end
 
 function angVel(β::Vector{T},βdot::Vector{T})::Vector{T} where T<: Real
-    β0 = β[1];
-    β1 = β[2];
-    β2 = β[3];
-    β3 = β[4];
+    # β0 = β[1];
+    # β1 = β[2];
+    # β2 = β[3];
+    # β3 = β[4];
 
-    E1 = [-β1  β0  β3 -β2
-          -β2 -β3  β0  β1
-          -β3  β2 -β1  β0]
+    # E1 = [-β1  β0  β3 -β2
+    #       -β2 -β3  β0  β1
+    #       -β3  β2 -β1  β0]
+    E1 = genE(β)[2:4,:]
     ω = 2*E1*βdot
     return ω
 end
