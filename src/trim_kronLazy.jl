@@ -390,22 +390,22 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       function Gdiff2(x,u)
         G = sparse(A*Ms_inv);
         #dG
-        dG1 = sparse(kronProd(permutedims(Ms_inv),1.0I(size(A,1)))*dA);
-        dG2 = sparse(kronProd(1.0I(size(Ms_inv,2)),A)*dMs_inv);
+        dG1 = sparse(kronProd(permutedims(Ms_inv),sparse(1.0I(size(A,1))))*dA);
+        dG2 = sparse(kronProd(sparse(1.0I(size(Ms_inv,2))),A)*dMs_inv);
         dG = sparse(dG1 + dG2);
 
         # dG_xx
-        Q1 = kronProd(permutedims(Ms_inv), 1.0I(size(A,1)));
+        Q1 = kronProd(permutedims(Ms_inv), sparse(1.0I(size(A,1))));
         dMs_inv_t = sparse(createCommMat(Ms_inv)*dMs_inv);
-        dQ1 = fdJ_kronAB(permutedims(Ms_inv), 1.0I(size(A,1)),dMs_inv_t,zeros(size(A,1)^2,length(x)));
+        dQ1 = fdJ_kronAB(permutedims(Ms_inv), sparse(1.0I(size(A,1))),dMs_inv_t,spzeros(size(A,1)^2,length(x)));
 
-        Q2 = kronProd(1.0I(size(Ms_inv,2)), A);
-        dQ2 = fdJ_kronAB(1.0I(size(Ms_inv,2)), A, zeros(size(dMs_inv)), dA);
+        Q2 = kronProd(sparse(1.0I(size(Ms_inv,2))), A);
+        dQ2 = fdJ_kronAB(sparse(1.0I(size(Ms_inv,2))), A, spzeros(size(dMs_inv)...), dA);
 
-        out1 = sparse(kronProd(permutedims(dA),1.0I(size(Q1,1)))*dQ1);
-        out2 = sparse(kronProd(1.0I(size(dA,2)), Q1)*dA_xx);
-        out3 = sparse(kronProd(permutedims(dMs_inv), 1.0I(size(Q2,1)))*dQ2);
-        out4 = sparse(kronProd(1.0I(size(dMs_inv,2)), Q2)*dMsInv_xx);
+        out1 = sparse(kronProd(permutedims(dA),sparse(1.0I(size(Q1,1))))*dQ1);
+        out2 = sparse(kronProd(sparse(1.0I(size(dA,2))), Q1)*dA_xx);
+        out3 = sparse(kronProd(permutedims(dMs_inv), sparse(1.0I(size(Q2,1))))*dQ2);
+        out4 = sparse(kronProd(sparse(1.0I(size(dMs_inv,2))), Q2)*dMsInv_xx);
 
         dG_xx = sparse(out1 + out2 + out3 + out4);
         return G, dG, dG_xx
@@ -419,20 +419,20 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
         H = sparse(G*permutedims(G));
 
-        dH = sparse(kronProd(G,1.0I(size(G,1)))*dG + kronProd(1.0I(size(G,1)),G)*dG_t);
+        dH = sparse(kronProd(G,sparse(1.0I(size(G,1))))*dG + kronProd(sparse(1.0I(size(G,1))),G)*dG_t);
 
-        P1 = kronProd(G,1.0I(size(G,1)));
-        dP1 = fdJ_kronAB(G, 1.0I(size(G,1)), dG, zeros(size(G,1)^2,length(x)));
+        P1 = kronProd(G,sparse(1.0I(size(G,1))));
+        dP1 = fdJ_kronAB(G, sparse(1.0I(size(G,1))), dG, spzeros(size(G,1)^2,length(x)));
 
-        P2 = kronProd(1.0I(size(G,1)), G);
-        dP2 = fdJ_kronAB(1.0I(size(G,1)), G, zeros(size(G,1)^2,length(x)), dG);
+        P2 = kronProd(sparse(1.0I(size(G,1))), G);
+        dP2 = fdJ_kronAB(sparse(1.0I(size(G,1))), G, spzeros(size(G,1)^2,length(x)), dG);
 
-        dG2_t = sparse(kronProd(1.0I(size(dG,2)), createCommMat(G))*dG_xx);
+        dG2_t = sparse(kronProd(sparse(1.0I(size(dG,2))), createCommMat(G))*dG_xx);
 
-        out1 = sparse(kronProd(permutedims(dG), 1.0I(size(P1,1)))*dP1);
-        out2 = sparse(kronProd(1.0I(size(dG,2)), P1)*dG_xx);
-        out3 = sparse(kronProd(permutedims(dG_t), 1.0I(size(P2,1)))*dP2);
-        out4 = sparse(kronProd(1.0I(size(dG_t,2)), P2)*dG2_t);
+        out1 = sparse(kronProd(permutedims(dG), sparse(1.0I(size(P1,1))))*dP1);
+        out2 = sparse(kronProd(sparse(1.0I(size(dG,2))), P1)*dG_xx);
+        out3 = sparse(kronProd(permutedims(dG_t), sparse(1.0I(size(P2,1))))*dP2);
+        out4 = sparse(kronProd(sparse(1.0I(size(dG_t,2))), P2)*dG2_t);
 
         dH_xx = sparse(out1 + out2 + out3 + out4);
         return H, dH, dH_xx
@@ -442,7 +442,7 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
       function Gpdiff2(x,u)
         dG_t = sparse(createCommMat(G)*dG);
-        dG2_t = sparse(kronProd(1.0I(size(dG,2)), createCommMat(G))*dG_xx);
+        dG2_t = sparse(kronProd(sparse(1.0I(size(dG,2))), createCommMat(G))*dG_xx);
 
         H_inv = sparse(inv(Array(H)));
         dH_inv = sparse(-kronProd(permutedims(H_inv), H_inv)*dH);
@@ -450,20 +450,20 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
         W = kronProd(permutedims(H_inv), H_inv);
         dW = fdJ_kronAB(permutedims(H_inv), H_inv, dH_inv_t, dH_inv);
-        h1 = sparse(kronProd(permutedims(dH),1.0I(size(W,1)))*dW);
-        h2 = sparse(kronProd(1.0I(size(dH,2)),W)*dH_xx);
+        h1 = sparse(kronProd(permutedims(dH),sparse(1.0I(size(W,1))))*dW);
+        h2 = sparse(kronProd(sparse(1.0I(size(dH,2))),W)*dH_xx);
         dH_inv2 = sparse(-(h1 + h2));
 
-        V1 = kronProd(permutedims(H_inv), 1.0I(size(G,2)));
-        dV1 = fdJ_kronAB(permutedims(H_inv), 1.0I(size(G,2)), dH_inv_t, zeros(size(G,2)^2, length(x)));
+        V1 = kronProd(permutedims(H_inv), sparse(1.0I(size(G,2))));
+        dV1 = fdJ_kronAB(permutedims(H_inv), sparse(1.0I(size(G,2))), dH_inv_t, spzeros(size(G,2)^2, length(x)));
 
-        V2 = kronProd(1.0I(size(H_inv,2)), permutedims(G));
-        dV2 = fdJ_kronAB(1.0I(size(H_inv,2)),permutedims(G), zeros(size(dH_inv_t)), dG_t);
+        V2 = kronProd(sparse(1.0I(size(H_inv,2))), permutedims(G));
+        dV2 = fdJ_kronAB(sparse(1.0I(size(H_inv,2))),permutedims(G), zeros(size(dH_inv_t)), dG_t);
 
-        out1 = sparse(kronProd(permutedims(dG_t), 1.0I(size(V1,1)))*dV1);
-        out2 = sparse(kronProd(1.0I(size(dG_t,2)), V1)*dG2_t);
-        out3 = sparse(kronProd(permutedims(dH_inv), 1.0I(size(V2,1)))*dV2);
-        out4 = sparse(kronProd(1.0I(size(dH_inv,2)), V2)*dH_inv2);
+        out1 = sparse(kronProd(permutedims(dG_t), sparse(1.0I(size(V1,1))))*dV1);
+        out2 = sparse(kronProd(sparse(1.0I(size(dG_t,2))), V1)*dG2_t);
+        out3 = sparse(kronProd(permutedims(dH_inv), sparse(1.0I(size(V2,1))))*dV2);
+        out4 = sparse(kronProd(sparse(1.0I(size(dH_inv,2))), V2)*dH_inv2);
 
         dGp_xx = sparse(out1 + out2 + out3 + out4);
 
@@ -492,49 +492,49 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       function hdiff2(x,u)
         # dh_xx
         # terms 1,2
-        T1 = kronProd(permutedims(M_inv*Fu), 1.0I(size(A,1)))
-        dMinvFu = sparse(kronProd(permutedims(Fu), 1.0I(size(M_inv,1)))*dM_inv + M_inv*dFu);
+        T1 = kronProd(permutedims(M_inv*Fu), sparse(1.0I(size(A,1))))
+        dMinvFu = sparse(kronProd(permutedims(Fu), sparse(1.0I(size(M_inv,1))))*dM_inv + M_inv*dFu);
         dMinvFu_t = dMinvFu;
 
-        dT1 = fdJ_kronAB(permutedims(M_inv*Fu), Matrix(1.0I(size(A,1))), dMinvFu_t, Matrix(zeros(size(A,1)^2, length(x))));
-        term1 = sparse(kronProd(permutedims(dA), 1.0I(size(T1,1)))*dT1)
-        term2 = sparse(kronProd(1.0I(size(dA,2)), T1)*dA_xx);
+        dT1 = fdJ_kronAB(permutedims(M_inv*Fu), sparse(1.0I(size(A,1))), dMinvFu_t, spzeros(size(A,1)^2, length(x)));
+        term1 = sparse(kronProd(permutedims(dA), sparse(1.0I(size(T1,1))))*dT1)
+        term2 = sparse(kronProd(sparse(1.0I(size(dA,2))), T1)*dA_xx);
 
         # terms 3,4
         T2 = kronProd(permutedims(Fu), A);
         dT2 = fdJ_kronAB(permutedims(Fu), A, dFu, dA);
-        term3 = sparse(kronProd(permutedims(dM_inv), 1.0I(size(T2,1)))*dT2);
-        term4 = sparse(kronProd(1.0I(size(dM_inv,2)), T2)*dMinv_xx);
+        term3 = sparse(kronProd(permutedims(dM_inv), sparse(1.0I(size(T2,1))))*dT2);
+        term4 = sparse(kronProd(sparse(1.0I(size(dM_inv,2))), T2)*dMinv_xx);
 
         # terms 5,6
         T3 = sparse(A*M_inv);
-        dT3 = sparse(kronProd(permutedims(M_inv), 1.0I(size(A,1)))*dA + kronProd(1.0I(size(M_inv,2)), A)*dM_inv);
-        term5 = sparse(kronProd(permutedims(dFu), 1.0I(size(A,1)))*dT3);
-        term6 = sparse(kronProd(1.0I(length(x)), T3)*dFu_xx);
+        dT3 = sparse(kronProd(permutedims(M_inv), sparse(1.0I(size(A,1))))*dA + kronProd(sparse(1.0I(size(M_inv,2))), A)*dM_inv);
+        term5 = sparse(kronProd(permutedims(dFu), sparse(1.0I(size(A,1))))*dT3);
+        term6 = sparse(kronProd(sparse(1.0I(length(x))), T3)*dFu_xx);
 
         dh_xx = sparse(db_xx - (term1 + term2 + term3 + term4 + term5 + term6));
 
         # dh_ux
-        E1 = kronProd(permutedims(M_inv*Fu), 1.0I(size(A,1)));
-        dE1_u = fdJ_kronAB(permutedims(M_inv*Fu), 1.0I(size(A,1)), M_inv*dFu_u, zeros(size(A,1)^2, length(u)));
+        E1 = kronProd(permutedims(M_inv*Fu), sparse(1.0I(size(A,1))));
+        dE1_u = fdJ_kronAB(permutedims(M_inv*Fu), sparse(1.0I(size(A,1))), M_inv*dFu_u, spzeros(size(A,1)^2, length(u)));
 
         E2 = kronProd(permutedims(Fu), A);
-        dE2_u = fdJ_kronAB(permutedims(Fu), A, dFu_u, zeros(length(A), length(u)));
+        dE2_u = fdJ_kronAB(permutedims(Fu), A, dFu_u, spzeros(length(A), length(u)));
 
-        term1 = sparse(kronProd(permutedims(dA),1.0I(size(E1,1)))*dE1_u);
-        term2 = sparse(kronProd(permutedims(dM_inv), 1.0I(size(E2,1)))*dE2_u);
-        term3 = sparse(kronProd(1.0I(size(dFu,2)), A*M_inv)*dFu_ux);
+        term1 = sparse(kronProd(permutedims(dA),sparse(1.0I(size(E1,1))))*dE1_u);
+        term2 = sparse(kronProd(permutedims(dM_inv), sparse(1.0I(size(E2,1))))*dE2_u);
+        term3 = sparse(kronProd(sparse(1.0I(size(dFu,2))), A*M_inv)*dFu_ux);
 
         dh_ux = sparse(-(term1 + term2 + term3));
 
         # dh_xu
-        out1 = sparse(kronProd(permutedims(M_inv*dFu_u), 1.0I(size(A,1)))*dA);
+        out1 = sparse(kronProd(permutedims(M_inv*dFu_u), sparse(1.0I(size(A,1))))*dA);
         out2 = sparse(kronProd(permutedims(dFu_u), A)*dM_inv);
-        out3 = sparse(kronProd(1.0I(length(u)), A*M_inv)*dFu_xu);
+        out3 = sparse(kronProd(sparse(1.0I(length(u))), A*M_inv)*dFu_xu);
         dh_xu = sparse(-(out1 + out2 + out3));
 
         # dh_uu
-        dh_uu = sparse(-kronProd(1.0I(length(u)), A*M_inv)*dFu_uu);
+        dh_uu = sparse(-kronProd(sparse(1.0I(length(u))), A*M_inv)*dFu_uu);
 
         return dh_xx, dh_ux, dh_xu, dh_uu
       end
@@ -545,15 +545,15 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       function Fcdiff2(x,u)
         # dFc_xx
         function jacT1(x)
-          D1 = kronProd(permutedims(Gp*h), 1.0I(size(Ms,1)));
-          dGph = sparse(kronProd(permutedims(h), 1.0I(size(Gp,1)))*dGp + Gp*dh_x);
+          D1 = kronProd(permutedims(Gp*h), sparse(1.0I(size(Ms,1))));
+          dGph = sparse(kronProd(permutedims(h), sparse(1.0I(size(Gp,1))))*dGp + Gp*dh_x);
           dGph_t = dGph;
-          dD1 = fdJ_kronAB(permutedims(Gp*h), 1.0I(size(Ms,1)), dGph_t, zeros(size(dMs)));
+          dD1 = fdJ_kronAB(permutedims(Gp*h), sparse(1.0I(size(Ms,1))), dGph_t, spzeros(size(dMs)...));
 
           dMs_t = sparse(createCommMat(Ms)*dMs);
 
-          dT1_1 = sparse(kronProd(permutedims(dMs), 1.0I(size(D1,1)))*dD1);
-          dT1_2 = sparse(kronProd(1.0I(size(dMs,2)), D1)*dMs_xx);
+          dT1_1 = sparse(kronProd(permutedims(dMs), sparse(1.0I(size(D1,1))))*dD1);
+          dT1_2 = sparse(kronProd(sparse(1.0I(size(dMs,2))), D1)*dMs_xx);
 
           dT1 = sparse(dT1_1 + dT1_2);
           return dT1
@@ -564,16 +564,16 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
           dD2 = fdJ_kronAB(permutedims(h), Ms, dh_x, dMs);
           # dGp_xx = Gpdiff2(x,u);
 
-          dT2_1 = sparse(kronProd(permutedims(dGp),1.0I(size(D2,1)))*dD2);
-          dT2_2 = sparse(kronProd(1.0I(size(dGp,2)), D2)*dGp_xx);
+          dT2_1 = sparse(kronProd(permutedims(dGp),sparse(1.0I(size(D2,1))))*dD2);
+          dT2_2 = sparse(kronProd(sparse(1.0I(size(dGp,2))), D2)*dGp_xx);
           dT2 = sparse(dT2_1 + dT2_2);
           return dT2
         end
 
         function jacT3(x)
-          dT3_1 = sparse(kronProd(permutedims(Gp*dh_x), 1.0I(size(Ms,1)))*dMs);
+          dT3_1 = sparse(kronProd(permutedims(Gp*dh_x), sparse(1.0I(size(Ms,1))))*dMs);
           dT3_2 = sparse(kronProd(permutedims(dh_x), Ms)*dGp);
-          dT3_3 = sparse(kronProd(1.0I(size(dh_x,2)), Ms*Gp)*dh_xx);
+          dT3_3 = sparse(kronProd(sparse(1.0I(size(dh_x,2))), Ms*Gp)*dh_xx);
           dT3 = sparse(dT3_1 + dT3_2 + dT3_3);
 
           return dT3
@@ -582,43 +582,43 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 
         # dFc_ux
         # # first term
-        D1 = kronProd(permutedims(Gp*h), 1.0I(size(Ms,1)));
+        D1 = kronProd(permutedims(Gp*h), sparse(1.0I(size(Ms,1))));
         dGph_u = sparse(Gp*dh_u);
         dGph_u_t = dGph_u;
-        dD1_u = fdJ_kronAB(permutedims(Gp*h), 1.0I(size(Ms,1)), dGph_u_t, zeros(size(dMs,1),length(u)));
-        out1 = sparse(kronProd(permutedims(dMs), 1.0I(size(D1,1)))*dD1_u);
+        dD1_u = fdJ_kronAB(permutedims(Gp*h), sparse(1.0I(size(Ms,1))), dGph_u_t, spzeros(size(dMs,1),length(u)));
+        out1 = sparse(kronProd(permutedims(dMs), sparse(1.0I(size(D1,1))))*dD1_u);
         # # second term
         D2 = sparse(kronProd(permutedims(h), Ms)*dGp);
-        dD2_u = fdJ_kronAB(permutedims(h), Ms, dh_u, zeros(size(dMs,1), length(u)));
-        out2 = sparse(kronProd(permutedims(dGp), 1.0I(size(D2,1)))*dD2_u);
+        dD2_u = fdJ_kronAB(permutedims(h), Ms, dh_u, spzeros(size(dMs,1), length(u)));
+        out2 = sparse(kronProd(permutedims(dGp), sparse(1.0I(size(D2,1))))*dD2_u);
         # # third term
-        out3 = sparse(kronProd(1.0I(size(dh_x,2)), Ms*Gp)*dh_ux);
+        out3 = sparse(kronProd(sparse(1.0I(size(dh_x,2))), Ms*Gp)*dh_ux);
         dFc_ux = sparse(out1 + out2 + out3);
 
         # dFc_xu
-        out1 = sparse(kronProd(permutedims(Gp*dh_u), 1.0I(size(Ms,1)))*dMs);
+        out1 = sparse(kronProd(permutedims(Gp*dh_u), sparse(1.0I(size(Ms,1))))*dMs);
         out2 = sparse(kronProd(permutedims(dh_u), Ms)*dGp);
-        out3 = sparse(kronProd(1.0I(length(u)), Ms*Gp)*dh_xu);
+        out3 = sparse(kronProd(sparse(1.0I(length(u))), Ms*Gp)*dh_xu);
         dFc_xu = sparse(out1 + out2 + out3);
 
 
         # dFc_uu
-        dFc_uu = sparse(kronProd(1.0I(size(dh_u,2)), Ms*Gp)*dh_uu);
+        dFc_uu = sparse(kronProd(sparse(1.0I(size(dh_u,2))), Ms*Gp)*dh_uu);
 
         return dFc_xx, dFc_ux, dFc_xu, dFc_uu
       end
       dFc_xx, dFc_ux, dFc_xu, dFc_uu = Fcdiff2(xv,uv);
 
       function hessqdd(x,u)
-        T1 = kronProd(permutedims(Fc + Fu), 1.0I(size(M_inv,1)));
-        dT1 = fdJ_kronAB(permutedims(Fc + Fu), 1.0I(size(M_inv,1)), (dFc + dFu), zeros(size(dM_inv)));
+        T1 = kronProd(permutedims(Fc + Fu), sparse(1.0I(size(M_inv,1))));
+        dT1 = fdJ_kronAB(permutedims(Fc + Fu), sparse(1.0I(size(M_inv,1))), (dFc + dFu), spzeros(size(dM_inv)...));
         T2 = sparse(dFc + dFu);
         dT2 = sparse(dFc_xx + dFu_xx);
 
-        out1 = sparse(kronProd(permutedims(dM_inv), 1.0I(size(T1,1)))*dT1);
-        out2 = sparse(kronProd(1.0I(size(dM_inv,2)), T1)*dMinv_xx);
-        out3 = sparse(kronProd(permutedims(T2), 1.0I(size(M_inv,1)))*dM_inv);
-        out4 = sparse(kronProd(1.0I(size(T2,2)), M_inv)*dT2);
+        out1 = sparse(kronProd(permutedims(dM_inv), sparse(1.0I(size(T1,1))))*dT1);
+        out2 = sparse(kronProd(sparse(1.0I(size(dM_inv,2))), T1)*dMinv_xx);
+        out3 = sparse(kronProd(permutedims(T2), sparse(1.0I(size(M_inv,1))))*dM_inv);
+        out4 = sparse(kronProd(sparse(1.0I(size(T2,2))), M_inv)*dT2);
 
         dqdd_xx = sparse(out1 + out2 + out3 + out4);
         return dqdd_xx
@@ -627,14 +627,14 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       # println("typeof(dqdd_xx) = ", typeof(dqdd_xx))
 
       function cross_qdd_ux(x,u)
-        T1 = kronProd(permutedims(Fc + Fu), 1.0I(size(M_inv,1)));
-        dT1_u = fdJ_kronAB(permutedims(Fc + Fu), 1.0I(size(M_inv,1)), dFc_u + dFu_u, zeros(size(M_inv,1)^2, length(u)));
+        T1 = kronProd(permutedims(Fc + Fu), sparse(1.0I(size(M_inv,1))));
+        dT1_u = fdJ_kronAB(permutedims(Fc + Fu), sparse(1.0I(size(M_inv,1))), dFc_u + dFu_u, spzeros(size(M_inv,1)^2, length(u)));
 
         T2 = sparse(dFc + dFu);
         dT2_u = sparse(dFc_ux + dFu_ux);
 
-        out1 = sparse(kronProd(permutedims(dM_inv), 1.0I(size(T1,1)))*dT1_u);
-        out2 = sparse(kronProd(1.0I(length(x)), M_inv)*dT2_u);
+        out1 = sparse(kronProd(permutedims(dM_inv), sparse(1.0I(size(T1,1))))*dT1_u);
+        out2 = sparse(kronProd(sparse(1.0I(length(x))), M_inv)*dT2_u);
         dqdd_ux = sparse(out1+out2);
         return dqdd_ux
       end
@@ -642,8 +642,8 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       # println("typeof(dqdd_ux) = ", typeof(dqdd_ux))
 
       function cross_qdd_xu(x,u)
-        out1 = sparse(kronProd(permutedims(dFc_u + dFu_u), 1.0I(size(M_inv,1)))*dM_inv);
-        out2 = sparse(kronProd(1.0I(length(u)), M_inv)*(dFc_xu + dFu_xu));
+        out1 = sparse(kronProd(permutedims(dFc_u + dFu_u), sparse(1.0I(size(M_inv,1))))*dM_inv);
+        out2 = sparse(kronProd(sparse(1.0I(length(u))), M_inv)*(dFc_xu + dFu_xu));
         dqdd_xu = sparse(out1 + out2);
         return dqdd_xu
       end
@@ -651,7 +651,7 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
       # println("typeof(dqdd_xu) = ", typeof(dqdd_xu))
 
       function hessqdd_u(x,u)
-        dqdd_uu = sparse(kronProd(1.0I(length(u)), M_inv)*(dFc_uu + dFu_uu));
+        dqdd_uu = sparse(kronProd(sparse(1.0I(length(u))), M_inv)*(dFc_uu + dFu_uu));
         return dqdd_uu
       end
       dqdd_uu = hessqdd_u(xv,uv);
@@ -671,7 +671,7 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
         d2y = [d2y_xx d2y_ux; d2y_xu d2y_uu]
         # d2y = convert(SparseMatrixCSC{Float64},sparse([d2y_xx d2y_ux; d2y_xu d2y_uu]));
 
-        out1 = sparse(kronProd(1.0I(length(xuVar)), permutedims(y))*d2y);
+        out1 = sparse(kronProd(sparse(1.0I(length(xuVar))), permutedims(y))*d2y);
         # out1 = convert(SparseMatrixCSC{Float64}, out1);
         out2 = sparse(permutedims(dy)*dy);
         out = sparse(2*(out1 + out2)); # hessian of dynamics cost = sum(y.*y)
@@ -775,7 +775,7 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
   nele_jac = Integer(m*n);
   nele_hess = Integer(n*(n+1)/2);
   prob = createProblem(n, lb, ub, m, lb_g, ub_g, nele_jac, nele_hess, eval_f, eval_g, eval_grad_f, eval_jac_g, eval_h);
-  # Ipopt.addOption(prob, "linear_solver", "pardiso");
+  Ipopt.addOption(prob, "linear_solver", "pardiso");
   prob.x = inGuess; # Initial guess.
   status = solveProblem(prob);
 
@@ -786,55 +786,55 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 end
 
 ## setup for pendulum
-# m = 1.0; l = 1.0; # Mass and length of bar
-# # Assuming bar revolves about Y axis
-# I1 = [1 0 0; 0 m * l^2 / 12 0; 0 0 1];
-# # Testing Dynamics with Revolute Joint
-# R1 = RigidBody(m, I1, 2);
-# RbI = InertialFrameAsRB()
-#
-# # Suspended at an angle theta from vertical
-# theta = deg2rad(30)
-# x_temp = [l/2*sin(theta); 0.0; -l/2*cos(theta)];
-# x0R1 = ([x_temp;[1;zeros(3)];zeros(3);zeros(4)]);
-# initialiseRigidBody!(R1,x0R1)
-#
-# # Axis about which bar is revolving
-# axisY = [0.0 1.0 0.0][:];
-#
-# rj1 = [0.0 0.0 0.0][:]; # Joint Location in body frame of first body
-# rj2 = -R1.x[1:3];
-#
-# j1 = Joint(RbI, R1, rj1, rj2, type="Revolute", axis=axisY);
-# j = [j1]; # Joint tree for pendulum
-# g = [0.0,0.0,-9.806]; # Gravity Vector.
-# x0Orig, u0Orig = getXU_0(j); # Initial values
-# nB = length(j) + 1; # number of bodies
-# ix= zeros(Integer,20*(nB-1)+1); # indicates which variables are free for optimization
-# ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., no force applied on pendulum
-# trim_U = u0Orig;
-# iy = zeros(Integer,7*(nB-1)); ## indicates which acceleration level terms need not be constrained. iy == 0 means acceleration is zero for corresponding state.
-# out = trim_kronLazy(j,g,ix=ix, iy=iy);
-# trim_x, trim_u, gam = out;
-# println("trim_x = ", trim_x)
-# trim_X = [j[1].RB1.x;trim_x]
-# println("qconstr = ", norm(trim_x[4:7])-1)
-# println("ẍ =", norm(fxdot(trim_X,trim_U, j, g)))
+m = 1.0; l = 1.0; # Mass and length of bar
+# Assuming bar revolves about Y axis
+I1 = [1 0 0; 0 m * l^2 / 12 0; 0 0 1];
+# Testing Dynamics with Revolute Joint
+R1 = RigidBody(m, I1, 2);
+RbI = InertialFrameAsRB()
 
-## setup for quadrotor
-include("nRotor.jl");
-j = gen_nRotor(4);
-g =([0.0,0.0,-9.806]);
+# Suspended at an angle theta from vertical
+theta = deg2rad(30)
+x_temp = [l/2*sin(theta); 0.0; -l/2*cos(theta)];
+x0R1 = ([x_temp;[1;zeros(3)];zeros(3);zeros(4)]);
+initialiseRigidBody!(R1,x0R1)
+
+# Axis about which bar is revolving
+axisY = [0.0 1.0 0.0][:];
+
+rj1 = [0.0 0.0 0.0][:]; # Joint Location in body frame of first body
+rj2 = -R1.x[1:3];
+
+j1 = Joint(RbI, R1, rj1, rj2, type="Revolute", axis=axisY);
+j = [j1]; # Joint tree for pendulum
+g = [0.0,0.0,-9.806]; # Gravity Vector.
 x0Orig, u0Orig = getXU_0(j); # Initial values
 nB = length(j) + 1; # number of bodies
 ix= zeros(Integer,20*(nB-1)+1); # indicates which variables are free for optimization
-ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., hover
+ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., no force applied on pendulum
 trim_U = u0Orig;
 iy = zeros(Integer,7*(nB-1)); ## indicates which acceleration level terms need not be constrained. iy == 0 means acceleration is zero for corresponding state.
 out = trim_kronLazy(j,g,ix=ix, iy=iy);
 trim_x, trim_u, gam = out;
 println("trim_x = ", trim_x)
 trim_X = [j[1].RB1.x;trim_x]
-
 println("qconstr = ", norm(trim_x[4:7])-1)
 println("ẍ =", norm(fxdot(trim_X,trim_U, j, g)))
+
+## setup for quadrotor
+# include("nRotor.jl");
+# j = gen_nRotor(4);
+# g =([0.0,0.0,-9.806]);
+# x0Orig, u0Orig = getXU_0(j); # Initial values
+# nB = length(j) + 1; # number of bodies
+# ix= zeros(Integer,20*(nB-1)+1); # indicates which variables are free for optimization
+# ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., hover
+# trim_U = u0Orig;
+# iy = zeros(Integer,7*(nB-1)); ## indicates which acceleration level terms need not be constrained. iy == 0 means acceleration is zero for corresponding state.
+# out = trim_kronLazy(j,g,ix=ix, iy=iy);
+# trim_x, trim_u, gam = out;
+# println("trim_x = ", trim_x)
+# trim_X = [j[1].RB1.x;trim_x]
+#
+# println("qconstr = ", norm(trim_x[4:7])-1)
+# println("ẍ =", norm(fxdot(trim_X,trim_U, j, g)))
