@@ -2,10 +2,10 @@ include("../../../src/plotSol.jl")
 include("../../../src/simulate.jl")
 include("../../../src/linearize.jl")
 include("../../../src/OrientationConversion.jl")
-include("../../../src/trim_kronLazy.jl");
+# include("../../../src/trim_kronLazy.jl");
+include("simplePendulumMinReal.jl")
 
 using Revise
-using JLD
 using BenchmarkTools
 
 ##
@@ -48,6 +48,8 @@ tEnd = (10.0);
 tInt = 1e-2; # Only for fixed step solver, currently using adaptive step.
 tSim, solFinal = simulate(tEnd, tInt, j, g=g)
 solPend1  = solFinal[1];
+println("Simulation complete., plotting results:");
+
 ##
 # Check if joint location has moved
 ωSol, jointLoc1 = checkRevJointIn(solPend1, rj2)
