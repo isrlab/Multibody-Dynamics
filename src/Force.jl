@@ -395,7 +395,7 @@ function ForceConSpr(x::AbstractArray{T}, j::Joint) where T<:Real
     Γu2 = 2*transpose(E2)*Γb2
 
     F_b1 = [F1; Γu1]; F_b2 = [F2; Γu2];
-    return (sparse(F_b1), sparse(F_b2))
+    return (F_b1, F_b2)
 end
 
 function ForceConSph(x::AbstractArray{T}, j::Joint)::Tuple{AbstractArray{T}, AbstractArray{T}} where T<:Real
