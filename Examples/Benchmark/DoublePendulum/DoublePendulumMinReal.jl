@@ -2,7 +2,6 @@ include("../../../src/plotSol.jl")
 using LinearAlgebra
 using DifferentialEquations
 using Revise
-using JLD
 
 function DoublePendulumMinReal(m,l,theta1,theta2, tInt, tEnd)
     grav = -9.806
