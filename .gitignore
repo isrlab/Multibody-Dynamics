@@ -1,2 +1,13 @@
 docs/build
 statprof
+pardiso.lic
+src/trial.jl
+src/trial_trim.jl
+Examples/trial.jl
+Examples/trial_linearize.jl
+src/teslatrim_kronLazy.jl
+Examples/trial.jl
+Examples/trial.jl
+Examples/trial.jl
+Examples/trial.jl
+Examples/trial.jl
