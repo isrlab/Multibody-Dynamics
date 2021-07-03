@@ -1,13 +1,13 @@
-include("../../../src/plotSol.jl")
-include("../../../src/simulate.jl")
-include("../../../src/linearize.jl")
-include("../../../src/OrientationConversion.jl")
+# include("../../../src/plotSol.jl")
+# include("../../../src/simulate.jl")
+# include("../../../src/linearize.jl")
+# include("../../../src/OrientationConversion.jl")
 # include("../../../src/trim_kronLazy.jl");
+import UdKaDyn
+# using Revise, UdKaDyn
+# using BenchmarkTools
+
 include("simplePendulumMinReal.jl")
-
-using Revise
-using BenchmarkTools
-
 ##
 # clearconsole()
 j1 = Nothing
