@@ -3,7 +3,7 @@
 # include("../../../src/linearize.jl")
 # include("../../../src/OrientationConversion.jl")
 # include("../../../src/trim_kronLazy.jl");
-import UdKaDyn
+using UdKaDyn
 # using Revise, UdKaDyn
 # using BenchmarkTools
 

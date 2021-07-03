@@ -1,4 +1,4 @@
-include("simulate.jl")
+# include("simulate.jl")
 
 using Ipopt
 using LazyArrays
