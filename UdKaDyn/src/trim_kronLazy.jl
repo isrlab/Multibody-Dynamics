@@ -786,40 +786,40 @@ function trim_kronLazy(j::Vector{Joint},GravityInInertial::Vector{Float64};
 end
 
 ## setup for pendulum
-m = 1.0; l = 1.0; # Mass and length of bar
-# Assuming bar revolves about Y axis
-I1 = [1 0 0; 0 m * l^2 / 12 0; 0 0 1];
-# Testing Dynamics with Revolute Joint
-R1 = RigidBody(m, I1, 2);
-RbI = InertialFrameAsRB()
+# m = 1.0; l = 1.0; # Mass and length of bar
+# # Assuming bar revolves about Y axis
+# I1 = [1 0 0; 0 m * l^2 / 12 0; 0 0 1];
+# # Testing Dynamics with Revolute Joint
+# R1 = RigidBody(m, I1, 2);
+# RbI = InertialFrameAsRB()
 
-# Suspended at an angle theta from vertical
-theta = deg2rad(30)
-x_temp = [l/2*sin(theta); 0.0; -l/2*cos(theta)];
-x0R1 = ([x_temp;[1;zeros(3)];zeros(3);zeros(4)]);
-initialiseRigidBody!(R1,x0R1)
+# # Suspended at an angle theta from vertical
+# theta = deg2rad(30)
+# x_temp = [l/2*sin(theta); 0.0; -l/2*cos(theta)];
+# x0R1 = ([x_temp;[1;zeros(3)];zeros(3);zeros(4)]);
+# initialiseRigidBody!(R1,x0R1)
 
-# Axis about which bar is revolving
-axisY = [0.0 1.0 0.0][:];
+# # Axis about which bar is revolving
+# axisY = [0.0 1.0 0.0][:];
 
-rj1 = [0.0 0.0 0.0][:]; # Joint Location in body frame of first body
-rj2 = -R1.x[1:3];
+# rj1 = [0.0 0.0 0.0][:]; # Joint Location in body frame of first body
+# rj2 = -R1.x[1:3];
 
-j1 = Joint(RbI, R1, rj1, rj2, type="Revolute", axis=axisY);
-j = [j1]; # Joint tree for pendulum
-g = [0.0,0.0,-9.806]; # Gravity Vector.
-x0Orig, u0Orig = getXU_0(j); # Initial values
-nB = length(j) + 1; # number of bodies
-ix= zeros(Integer,20*(nB-1)+1); # indicates which variables are free for optimization
-ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., no force applied on pendulum
-trim_U = u0Orig;
-iy = zeros(Integer,7*(nB-1)); ## indicates which acceleration level terms need not be constrained. iy == 0 means acceleration is zero for corresponding state.
-out = trim_kronLazy(j,g,ix=ix, iy=iy);
-trim_x, trim_u, gam = out;
-println("trim_x = ", trim_x)
-trim_X = [j[1].RB1.x;trim_x]
-println("qconstr = ", norm(trim_x[4:7])-1)
-println("ẍ =", norm(fxdot(trim_X,trim_U, j, g)))
+# j1 = Joint(RbI, R1, rj1, rj2, type="Revolute", axis=axisY);
+# j = [j1]; # Joint tree for pendulum
+# g = [0.0,0.0,-9.806]; # Gravity Vector.
+# x0Orig, u0Orig = getXU_0(j); # Initial values
+# nB = length(j) + 1; # number of bodies
+# ix= zeros(Integer,20*(nB-1)+1); # indicates which variables are free for optimization
+# ix[14*(nB-1)+1:20*(nB-1)] .= 1; ## keeping u constant, i.e., no force applied on pendulum
+# trim_U = u0Orig;
+# iy = zeros(Integer,7*(nB-1)); ## indicates which acceleration level terms need not be constrained. iy == 0 means acceleration is zero for corresponding state.
+# out = trim_kronLazy(j,g,ix=ix, iy=iy);
+# trim_x, trim_u, gam = out;
+# println("trim_x = ", trim_x)
+# trim_X = [j[1].RB1.x;trim_x]
+# println("qconstr = ", norm(trim_x[4:7])-1)
+# println("ẍ =", norm(fxdot(trim_X,trim_U, j, g)))
 
 ## setup for quadrotor
 # include("nRotor.jl");
