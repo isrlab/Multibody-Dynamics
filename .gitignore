@@ -6,4 +6,4 @@ src/trial_trim.jl
 Examples/trial.jl
 Examples/trial_linearize.jl
 src/teslatrim_kronLazy.jl
-
+.DS_Store
