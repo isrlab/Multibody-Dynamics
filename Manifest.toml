@@ -318,9 +318,9 @@ version = "0.8.5"
 
 [[DomainSets]]
 deps = ["CompositeTypes", "IntervalSets", "LinearAlgebra", "StaticArrays", "Statistics"]
-git-tree-sha1 = "627844a59d3970db8082b778e53f86741d17aaad"
+git-tree-sha1 = "05c78bc75e5e0edba946cf59f467624b259692de"
 uuid = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-version = "0.5.7"
+version = "0.5.8"
 
 [[Downloads]]
 deps = ["ArgTools", "LibCURL", "NetworkOptions"]
@@ -950,9 +950,9 @@ version = "0.0.1"
 
 [[SciMLBase]]
 deps = ["ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "RecipesBase", "RecursiveArrayTools", "StaticArrays", "Statistics", "Tables", "TreeViews"]
-git-tree-sha1 = "91e29a2bb257a4b992c48f35084064578b87d364"
+git-tree-sha1 = "2577b69c151374cc505543b1ee3df98b1ac3abb0"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.19.0"
+version = "1.19.1"
 
 [[Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
@@ -1033,9 +1033,9 @@ version = "0.9.12"
 
 [[SteadyStateDiffEq]]
 deps = ["DiffEqBase", "DiffEqCallbacks", "LinearAlgebra", "NLsolve", "Reexport", "SciMLBase"]
-git-tree-sha1 = "9a7891db5717e4260cf285a252c7b61d948dcf83"
+git-tree-sha1 = "3e057e1f9f12d18cac32011aed9e61eef6c1c0ce"
 uuid = "9672c7b4-1e72-59bd-8a11-6ac3964bc41f"
-version = "1.6.5"
+version = "1.6.6"
 
 [[StochasticDiffEq]]
 deps = ["Adapt", "ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqJump", "DiffEqNoiseProcess", "DocStringExtensions", "FillArrays", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "Logging", "MuladdMacro", "NLsolve", "OrdinaryDiffEq", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
