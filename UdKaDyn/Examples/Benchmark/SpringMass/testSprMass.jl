@@ -2,8 +2,7 @@ include("../../../src/plotSol.jl")
 include("../../../src/simulate.jl")
 include("../../../src/linearize.jl")
 include("../../../src/OrientationConversion.jl")
-include("../../../src/trim_kronLazy.jl");
-
+include("SprMassMinReal.jl")
 using Revise
 # clearconsole()
 
@@ -30,7 +29,7 @@ j = [j1];
 tEnd = 10.0
 tSpan = 0.01
 g = [0.0;0.0;0.0];
-tSim, solFinal = simulateDiff(tEnd,tSpan,j,g = g)
+tSim, solFinal = simulate(tEnd,tSpan,j,g = g)
 
 ## Check errors
 close("all");

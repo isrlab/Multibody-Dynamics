@@ -2,8 +2,8 @@ include("../../../src/plotSol.jl")
 include("../../../src/simulate.jl")
 include("../../../src/linearize.jl")
 include("../../../src/OrientationConversion.jl")
-include("../../../src/trim_kronLazy.jl");
-
+# include("../../../src/trim_kronLazy.jl");
+include("DoublePendulumMinReal.jl")
 using Revise
 using BenchmarkTools
 ## clearing variables
@@ -51,9 +51,10 @@ j = [j1;j2];
 
 ## Simulation
 tEnd = 1.0
-tSpan = 0.01;
+tInt = 0.01;
 
-tSim, solFinal = simulateDiff(tEnd,tSpan,j,g=g)
+tSim, solFinal = simulate(tEnd,tSpan,j,g=g)
+println("Simulation complete; plotting results:")
 
 solPend1  = solFinal[1];
 solPend2  = solFinal[2];

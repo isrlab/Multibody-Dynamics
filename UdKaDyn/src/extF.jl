@@ -1,7 +1,7 @@
 #
-include("RigidBody.jl")
-include("Joint.jl")
-include("OrientationConversion.jl")
+# include("RigidBody.jl")
+# include("Joint.jl")
+# include("OrientationConversion.jl")
 
 function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # Function to generate external forces
@@ -31,14 +31,14 @@ function extF(t::T, j::Vector{Joint})::Vector{extForces} where T<:Real
     # extFList[5] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
     # extFList[6] = extForces([0.0 0.0 0.0], zeros(1,3), [0.0 0.0 -0.1*sin(t)])
 
-    nRotors = length(j) - 1;
-    C_T = 1.27e-6;
-    Ω_h = sqrt(TotalMass*(9.81)/nRotors/C_T);
-    flt = ones(nRotors);  # fault vector for the n Rotors
+    # nRotors = length(j) - 1;
+    # C_T = 1.27e-6;
+    # Ω_h = sqrt(TotalMass*(9.81)/nRotors/C_T);
+    # flt = ones(nRotors);  # fault vector for the n Rotors
     # flt = [1.0;0.5;1.0;0.5];
-    for i=3:j[end].RB2.bodyID
-        extFList[i] = genRotorF(Ω_h,flt[i-2]);
-    end
+    # for i=3:j[end].RB2.bodyID
+    #     extFList[i] = genRotorF(Ω_h,flt[i-2]);
+    # end
 
     # grav = [0.0,0.0,-9.806]
 

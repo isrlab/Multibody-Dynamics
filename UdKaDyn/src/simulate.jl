@@ -2,11 +2,11 @@
 # Assuming all bodies connected in a tree by joints
 
 
-include("RigidBody.jl")
-include("OrientationConversion.jl")
-include("Joint.jl")
-include("Force.jl")
-include("extF.jl")
+# include("RigidBody.jl")
+# include("OrientationConversion.jl")
+# include("Joint.jl")
+# include("Force.jl")
+# include("extF.jl")
 
 
 using LinearAlgebra
@@ -219,9 +219,9 @@ function checkRevJointIn(solPend1::solSim, rj2::Array{Float64})
     jointLoc1 = Matrix{Float64}(undef,tLen,3)
     ωSol = Matrix{Float64}(undef,tLen,3)
     for i=1:tLen
-        R1.dcm = quat2dcm(solPend1.β[i,:])
+        tmp_dcm = quat2dcm(solPend1.β[i,:])
         ωSol[i,:] = angVel(solPend1.β[i,:],solPend1.βdot[i,:])
-        jointLoc1[i,:] = solPend1.r[i,:] + transpose(R1.dcm)*rj2
+        jointLoc1[i,:] = solPend1.r[i,:] + transpose(tmp_dcm)*rj2
     end
     return ωSol, jointLoc1
 end

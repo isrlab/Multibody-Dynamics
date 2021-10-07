@@ -1,5 +1,5 @@
 # function that returns the joint tree for an n-rotor vtol vehicle
-include("simulate.jl")
+# include("simulate.jl")
 function gen_nRotor(n::Integer)
     # Inertial and mass properties from:
     # Hossain, M. Raju, and Nicholas Krouglicof. "Multi-body dynamics modeling & control of quadrotor helicopter using bond graph." Proceedings of the International Conference on Bond Graph Modeling and Simulation. 2016.

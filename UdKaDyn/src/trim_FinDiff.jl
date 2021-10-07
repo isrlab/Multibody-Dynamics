@@ -1,4 +1,4 @@
-include("simulate.jl")
+# include("simulate.jl")
 using FiniteDifferences
 using Ipopt
 using GenericLinearAlgebra
